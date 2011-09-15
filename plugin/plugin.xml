@@ -8,6 +8,7 @@
     <version>0.0.0.1</version>
     <minServerVersion>3.7.1</minServerVersion> 
 
+
     <adminconsole>              
         <tab id="tab-server" >		
             <sidebar id="sidebar-websockets-settings" name="WebSockets" description="WebSockets Setting bar">
