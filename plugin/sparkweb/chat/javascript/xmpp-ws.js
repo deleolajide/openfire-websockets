@@ -376,8 +376,9 @@ XMPP.WS.prototype = {
         this.username = username;
         this.password = password;        
         this.resource = (!resource ? "spank" : resource);
+        this.protocol = window.location.protocol == "http:" ? "ws:" : "wss:"
         
-	this._ws = new WebSocket("ws://" + window.location.host + "/ws/server?username=" + username + "&password=" + password + "&resource=" + resource, "xmpp");        
+	this._ws = new WebSocket(this.protocol + "//" + window.location.host + "/ws/server?username=" + username + "&password=" + password + "&resource=" + resource, "xmpp");        
 	this._ws.onopen = this._onopen.bind(this);
 	this._ws.onmessage = this._onmessage.bind(this);
 	this._ws.onclose = this._onclose.bind(this);

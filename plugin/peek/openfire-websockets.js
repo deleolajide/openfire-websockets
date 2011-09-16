@@ -17,8 +17,6 @@
  *
  *  Create and initialize a OpenfireWebSockets object.
  *
- *  Parameters:
- *    (String) service - The WebSocket service URL.
  *
  *  Returns:
  *    A new OpenfireWebSockets object.
