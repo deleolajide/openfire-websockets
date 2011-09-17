@@ -26,26 +26,7 @@ secretary._loadFeatures = function(parameters) {
 
             self._loadFeature(featureName);
         });
-    });
-
-    /*
-    <iq to="wodemaja@gmail.com/8A058BD3" from="gmail.com" id="7568:serviceDisco" type="result">
-        <query xmlns="http://jabber.org/protocol/disco#info">
-        <identity category="server" type="im" name="Google Talk"></identity>
-        <feature var="http://jabber.org/protocol/disco#info"></feature>
-        <feature var="google:jingleinfo"></feature>
-        <feature var="google:roster"></feature>
-        <feature var="google:nosave"></feature>
-        <feature var="google:setting"></feature>
-        <feature var="google:shared-status"></feature>
-        <feature var="http://jabber.org/protocol/archive#otr"></feature>
-        <feature var="google:queue"></feature>
-        <feature var="google:mail:notify"></feature>
-        <feature var="http://jabber.org/protocol/archive#save"></feature>
-        <feature var="http://jabber.org/protocol/rosterx"></feature>
-        </query>
-    </iq>
-     */   
+    }); 
 };
 
 secretary._loadFeature = function(featureName) {
@@ -108,8 +89,12 @@ secretary.addHandler = function(handlerName, handler) {
 };
 
 secretary._connect = function(url, jid, password) {
-    var self = this;    
-    this._connection = new Openfire.Connection(url);
+    var self = this;  
+    
+    if (boss.options('USE_WEBSOCKETS'))
+	this._connection = new Openfire.Connection(url);    
+    else    
+    	this._connection = new Strophe.Connection(url);
 
     try {
   
@@ -264,14 +249,20 @@ var features = {
         _invite: function(parameters) {
             var jid = parameters.jid || '';
             var jidReg = /^([A-Za-z0-9_\-\.])+\@([A-Za-z0-9_\-\.])+\.([A-Za-z]{2,4})$/;
-            if (jid && jidReg.test(jid) === true) {
+            //if (jid && jidReg.test(jid) === true) {
+
+            if (jid && jid.indexOf("@") > - 1) 
+            {            
                 return this._connection.roster.subscribe(jid);
+                
             } else {
                 return false;
             }
         },
         _acceptInvitation: function(parameters) {
-            var jid = parameters.jid || '';
+            var jid = parameters.jid || '';    
+            
+            this._connection.roster.subscribed(jid);            
             return this._connection.roster.subscribe(jid);
         },
         _rejectInvitation: function(parameters) {
@@ -298,9 +289,8 @@ var features = {
                     var $response = $(response);
                     var name = $response.find('vCard FN').text();
                     var $photo = $response.find('vCard PHOTO');
-                    var avatar = 'data:' + $photo.find('TYPE').text() + ';base64,' + $photo.find('BINVAL').text();
-
-                    var response = {jid: jid.toLowerCase(), name: name || jid.toLowerCase(), avatar: avatar};
+                    var avatar = 'data:' + $photo.find('TYPE').text() + ';base64,' + $photo.find('BINVAL').text();                     
+                    var response = {jid: jid.toLowerCase(), name: name || jid.toLowerCase(), avatar: avatar};                    
                     callback(response);
                 }
             );
@@ -317,7 +307,7 @@ var features = {
                     //<item jid="i@miy.im" subscription="none"/> ???
                     
                     $this = $(this);
-                    var jid = $this.attr('jid').toLowerCase();
+                    var jid = Strophe.getBareJidFromJid($this.attr('jid')).toLowerCase();
                     var name = $this.attr('name') || jid;
                     var invited = !!$this.attr('ask');
                     var rejected = $this.attr('subscription') == 'none';
@@ -327,7 +317,8 @@ var features = {
 
                 boss.report('loadContacts', {contacts: contacts});
 
-                for (index in contacts) {
+                for (index in contacts) 
+                {              
                     self._loadUser(contacts[index].jid, function(response) {
                         boss.report('loadUser', response);
                     });
@@ -441,7 +432,24 @@ var features = {
 
                     // todo 
                     if (from !== features['xmpp']._user.jid) {
-                        boss.report('presence', {from: from, show: show, status: status});
+                    
+			if (!state.user.contacts[from])
+			{
+                    	    var jid = from;
+                    	    var name = jid;			
+			    var contacts = {};
+			    var presence = {
+				type: show,
+				message: status
+			    };
+                              
+			    contacts[jid] = {jid: jid, name: name, invited: false, rejected: false, presence: presence};
+			    boss.report('loadContacts', {contacts: contacts});				    
+			
+			} else 
+				boss.report('presence', {from: from, show: show, status: status});
+                        
+                        
                     }
             }
             

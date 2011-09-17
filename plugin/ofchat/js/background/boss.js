@@ -52,6 +52,7 @@ _initVersion = function() {
             options('BOSH_SERVICE', 'https://localhost:7070');
             options('GOOGLE_APPS_ACCOUNT', true); 
             options('AUTO_SIGN_IN', true); 
+            options('USE_WEBSOCKETS', false);
             options('ALIGN', 'right'); 
             options('DESKTOP_NOTIFICATION', true); 
             options('AUTO_IDLE', true); 

@@ -5,14 +5,23 @@ this.manifest = {
     "settings": [
         {
             "tab": "Connection",
-            "group": "WebSockets",
-            "name": "",
-            "type": "description",
-            "text": ""
+            "group": "Openfire",
+            "name": "custom_bosh_service",
+            "id": "custom_bosh_service",
+            "type": "text",
+            "text": "https://localhost:7743/http-bind/",
+            "masked": false
         },
         {
             "tab": "Connection",
-            "group": "WebSockets",
+            "group": "Openfire",
+            "name": "use_websockets",
+            "type": "checkbox",
+            "label": "Use WebSockets"
+        },
+        {
+            "tab": "Connection",
+            "group": "Openfire",
             "name": "bosh_service",
             "id": "bosh_service",
             "type": "listBox",
@@ -20,16 +29,16 @@ this.manifest = {
             "options": [
             ]
         },
+        
         {
             "tab": "Connection",
-            "group": "WebSockets",
-            "name": "custom_bosh_service",
-            "id": "custom_bosh_service",
-            "type": "text",
-            "label": "",
-            "text": "https://localhost:7743/ws/server/",
-            "masked": false
-        },
+            "group": "Openfire",
+            "name": "",
+            "type": "description",
+            "text": "Enter the BOSH URL for your Openfire server which is usually <b>'http://myserver.com:7070/http-bind/'</b>. <br>&nbsp;</br>Enable WebSockets if you have the openifre-websockets plugin installed on your Openfire server."
+        },      
+        
+        
         {
             "tab": "Connection",
             "group": "Account",
@@ -55,7 +64,7 @@ this.manifest = {
             "type": "checkbox",
             "label": "Auto Sign in When Chrome Starts"
         },
-		{
+	{
             "tab": "Connection",
             "group": "",
             "name": "",
@@ -70,6 +79,8 @@ this.manifest = {
             "type": "button",
             "text": "Sign out"
         },
+        
+        
         {
             "tab": "Advanced",
             "group": "Position",
@@ -93,15 +104,6 @@ this.manifest = {
             "type": "checkbox",
             "label": "Desktop Notifications On"
         },
-        /*
-        {
-            "tab": "Advanced",
-            "group": "Auto Away",
-            "name": "auto_idle",
-            "type": "checkbox",
-            "label": "Enable Auto Away"
-        },
-        */
         {
             "tab": "Advanced",
             "group": "Excludes",
@@ -119,11 +121,20 @@ this.manifest = {
         },
         {
             "tab": "About",
+            "group": "OfChat",
+            "name": '',
+            "type": "description",
+            "text": "OfChat is a Google chrome extension for the <a href='http://www.igniterealtime.org'>Openfire XMPP Server</a>. It uses WebSockets or BOSH to connect directly to an Openfire server.\
+                     <font color='red'>No third-party BOSH or WebSockets server is required or needed.</font></p> \
+                     OfChat was cloned from Gtalklet by Sean Zheng and licensed under <a href='http://www.opensource.org/licenses/mit-license.php' target='_blank'>MIT</a><br />"
+        },
+        {
+            "tab": "About",
             "group": "Credits",
             "name": "",
             "type": "description",
-            "text": "<a href='https://chrome.google.com/extensions/detail/mijcfiakajpjojbebgmoahoddbeafckk' target='_blank'>Gtalklet</a> Copyright © 2011, <br />\
-                    Sean Zheng <a href='mailto:zealotrunner@gmail.com'>zealotrunner@gmail.com</a><br />\
+            "text": "<a href='https://chrome.google.com/extensions/detail/mijcfiakajpjojbebgmoahoddbeafckk' target='_blank'>Gtalklet</a> Copyright © 2011,\
+                    Sean Zheng <a href='mailto:zealotrunner@gmail.com'>zealotrunner@gmail.com</a>\
                     Ambar Lee <a href='mailto:ambar.lee@gmail.com'>ambar.lee@gmail.com</a><br />\
                      <a href='http://jquery.com/' target='_blank'>jQuery</a> [Licensed under MIT]<br />\
                      <a href='http://strophe.im/' target='_blank'>strophejs</a> [Licensed under MIT]<br />\
@@ -135,19 +146,7 @@ this.manifest = {
                      <a href='http://gentleface.com/free_icon_set.html' target='_blank'>Free Mono Icon Set</a> [Licensed under Creative Commons Attribution-Noncommercial Works 3.0 Unported]\
                      <br />\
                      <br />"
-        },
-        {
-            "tab": "About",
-            "group": "",
-            "name": "",
-            "type": "description",
-            "text": "OfChat is a Google chrome extension for Openfire WebSocket. It is based on Gtalklet"
-                    /*
-                     Licensed under <a href='http://www.opensource.org/licenses/mit-license.php' target='_blank'>MIT</a><br />\
-                     <a href='https://github.com/zealotrunner/gtalklet' target='_blank'>Source</a> | \
-                     <a href='https://chrome.google.com/extensions/detail/mijcfiakajpjojbebgmoahoddbeafckk' target='_blank'>Chrome Extension</a><br />\
-                     "
-                     */
         }
+        
     ]
 };

@@ -76,25 +76,24 @@ state.CONSOLE_COMMANDS = {
                         ]
                         };
 
-state.INVITATION_STATE = { //邀请状态, 未发送邀请|已发送邀请|jid非法
+state.INVITATION_STATE = { //????, ?????|?????|jid??
     NORMAL: '',
     INVITED: 'invited',
     INVALID: 'invalid',
 };
 
 var defaultState =  {
-    user: {   // 初始，未登录
-          signedin: false,  // 是否登录
-          dropped: false,  // 是否掉线
+    user: {   // ??????
+          signedin: false,  // ????
+          dropped: false,  // ????
           jid: '',
           name: '',
           presence: {
               type: state.PRESENCE_TYPE.UNAVAILABLE,
               message: state.PRESENCE_MESSAGE[state.PRESENCE_TYPE.UNAVAILABLE]
           },
-          //avatar: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAa9JREFUeNqcU8tKw1AQzU1v0retJSUQsgq4KEVwJy4F8TO6saviwg9wLbgRd7qouOp/iCs/QXAlpIFCaWkobfP2TEgkDQUfA4fMnce5M3MnLIoiIZVut5uqOtAHesl5BAyBTyEnLEvQ6XTos8cYMzVNK7ZaLYkMs9nMsyzLQSwR21kCMXsIw5AwaLfbcqVSkefzOSOQTjb4+knMN7YIgiAgXFDCcrlMzwLp5XJZgt5LbSl4ngCyv9lstlojcRyHwa/kZ7CL4B0EJ5IkbVXneV4I/0eeYFcLTxiaky8Vs3DxHf6mhefFYnGIFgZ4hSIZkOzA9pg8548VxFWsVis/nTRagikY5W8n5AkOgFtRFN/o2dKgZrPJsRsv0G8AI0sQT7vRaKjIv+ScX+m6LiuKIq/XawFVxMTValUolUrRdDr1TNN0fd+/h/kBsBicR7jxFYlFVVUlJDJKzj8jKhCwHzHRZDLxxuMxDfW8ALk2DOO4Xq/LGBRzXTdO3gXy0QWILdRqNYaKOMeQzlABt21b+K1QLPaEck85ytDQE6Np/0WwWPFmojV2l/y6/5HhlwADAB9vYrbjcbkvAAAAAElFTkSuQmCC',  // 默认头像
-          avatar: '',
-          contacts: {} // 联系人 
+          avatar: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAa9JREFUeNqcU8tKw1AQzU1v0retJSUQsgq4KEVwJy4F8TO6saviwg9wLbgRd7qouOp/iCs/QXAlpIFCaWkobfP2TEgkDQUfA4fMnce5M3MnLIoiIZVut5uqOtAHesl5BAyBTyEnLEvQ6XTos8cYMzVNK7ZaLYkMs9nMsyzLQSwR21kCMXsIw5AwaLfbcqVSkefzOSOQTjb4+knMN7YIgiAgXFDCcrlMzwLp5XJZgt5LbSl4ngCyv9lstlojcRyHwa/kZ7CL4B0EJ5IkbVXneV4I/0eeYFcLTxiaky8Vs3DxHf6mhefFYnGIFgZ4hSIZkOzA9pg8548VxFWsVis/nTRagikY5W8n5AkOgFtRFN/o2dKgZrPJsRsv0G8AI0sQT7vRaKjIv+ScX+m6LiuKIq/XawFVxMTValUolUrRdDr1TNN0fd+/h/kBsBicR7jxFYlFVVUlJDJKzj8jKhCwHzHRZDLxxuMxDfW8ALk2DOO4Xq/LGBRzXTdO3gXy0QWILdRqNYaKOMeQzlABt21b+K1QLPaEck85ytDQE6Np/0WwWPFmojV2l/y6/5HhlwADAB9vYrbjcbkvAAAAAElFTkSuQmCC',  // ????
+          contacts: {} // ??? 
     },
     ui: {
         css: '',
@@ -103,21 +102,21 @@ var defaultState =  {
             state: state.PANEL_STATE.COLLAPSED,
             commands: state.CONSOLE_COMMANDS.EMPTY
         },
-        pendingThreads: [],  // 待接收的新会话threadId
+        pendingThreads: [],  // ???????threadId
         log: {
             message: '',
             level: '' //  DEBUG INFO WARN ERROR
         },
         filter: {
-            state: state.PANEL_STATE.COLLAPSED,  // 新会话面板状态 collapsed | expand
-            filter: '',    // 用户filter文本框中的内容
-            matchedContacts: [], // 匹配的用户
-            matchedContactsSum: 0, //匹配的用户总数
-            invite: state.INVITATION_STATE.NORMAL,  //邀请状态, 未发送邀请|已发送邀请|jid非法
+            state: state.PANEL_STATE.COLLAPSED,  // ??????? collapsed | expand
+            filter: '',    // ??filter???????
+            matchedContacts: [], // ?????
+            matchedContactsSum: 0, //???????
+            invite: state.INVITATION_STATE.NORMAL,  //????, ?????|?????|jid??
         },
         blocked : false
     },
-    threads: [ //初始，没有聊天线程
+    threads: [ //?????????
         {
             prototype: 'prototype',
             id: 'prototype',
@@ -130,28 +129,28 @@ var defaultState =  {
                 }
             },
             ui: {
-                type: state.PANEL_TYPE.CHAT,  //线程类型 chat | invited | ...
-                state: '',    //面板的状态, minimized | normal |...
+                type: state.PANEL_TYPE.CHAT,  //???? chat | invited | ...
+                state: '',    //?????, minimized | normal |...
                 height: '',
                 width: '',
-                scrollTop: 0, // 滚动位置
+                scrollTop: 0, // ????
                 unread: '',
-                lastActivity: '',  // 最近活动时间
+                lastActivity: '',  // ??????
                 messagebox : {
-                    typing: '',    //消息框中的内容
+                    typing: '',    //???????
                     height: 32, //16
                     disabled: false
                 }
             },
-            messages: [  //线程中的消息
+            messages: [  //??????
             {
                 prototype: 'prototype',
-                type: '',       //消息类型，chat_sent | chat_recieved | status 之类
-                from: '',    //消息来源，jid; 没有from表示自己或系统消息（根据type）
-                time: '',       //发消息的时间
+                type: '',       //?????chat_sent | chat_recieved | status ??
+                from: '',    //?????jid; ??from????????????type?
+                time: '',       //??????
                 timestamp: '',
                 showTime : true,
-                content: ''     //消息内容
+                content: ''     //????
             }
             ]
         }
@@ -205,11 +204,11 @@ $.extend(state, {
         return stateChange;
     },
     /**
-     * @param string report 操作名
-     * @param array parameters 操作的参数
+     * @param string report ???
+     * @param array parameters ?????
      */
     call: function(report, parameters) {
-              // returns 中包含 parameters 
+              // returns ??? parameters 
               var stateChange = {
                   report: report, 
                   returns: parameters
@@ -221,7 +220,7 @@ $.extend(state, {
 
               switch (report) {
                   case 'refresh':
-                      // follower请求刷新, 返回整个状态对象
+                      // follower????, ????????
                       stateChange = this;
                       break;
                   case 'log':
@@ -259,18 +258,21 @@ $.extend(state, {
                       var from = parameters.from;
                       var show = parameters.show;
                       var status = parameters.status;
+                      var jid = parameters.jid;
 
                       var type = state.PRESENCE_TYPE[show.toUpperCase()]; 
                       var message = status || state.PRESENCE_MESSAGE[type];
                       
                       if (state.user.contacts[from]) {
+                   
                           state.user.contacts[from].presence = {};
                           state.user.contacts[from].presence.type = type;
                           state.user.contacts[from].presence.message = message;
                       }
 
-                      var threadOfJid = this._getThreadByJid(from);
-                      if (threadOfJid) {
+                      var threadOfJid = this._getThreadByJid(jid);
+                     
+                      if (threadOfJid) {                    
                           threadOfJid.user.presence.type = type;
                           threadOfJid.user.presence.message = message;
                       }
@@ -295,7 +297,7 @@ $.extend(state, {
                               contacts.push(state.user.contacts[index]);
                           }
 
-                          // 按在线状态排序
+                          // ???????
                           contacts.sort(function(a, b) {
                               var presenceA = a.presence.type.toLowerCase();
                               var ra = state.PRESENCE_TYPE_ARRAY.indexOf(presenceA);
@@ -311,18 +313,41 @@ $.extend(state, {
                           });
 
                           $.grep(contacts, function(e, i) {
-                              var jid = e.jid.toLowerCase();
-                              var name = e.name.toLowerCase();
+                          
+                             if (e.jid.indexOf("@") > -1)
+                             {
+                                 if (segment == " ")	// use spacebar to filter only online contacts
+                                 {
+				      if (e.presence.type.toLowerCase() != "unavailable") 
+				      {				      	
+				      	if (matchedContactsSum < 15)
+				      	{
+				      		matchedContactsSum++;				      	
+				      		matchedContacts.unshift(e);
+				      	}
+				      }
+				      
+                                 } else {
+                              
+				      var jid = e.jid.toLowerCase();
+				      var name = e.name.toLowerCase();
 
-                              var match = jid.indexOf(segment);
-                              if (match > -1 && matchedContactsSum++ < 8) {
-                                  matchedContacts.unshift(e);
-                              } else {
-                                  match = name.indexOf(segment);
-                                  if (match > -1 && matchedContactsSum++ < 8) {
-                                      matchedContacts.unshift(e);
-                                  }
-                              }
+				      var match = jid.indexOf(segment);
+
+				      if (match > -1 && matchedContactsSum++ < 15) 
+				      {
+					  matchedContacts.unshift(e);
+					  
+				      } else {
+				      
+					  match = name.indexOf(segment);
+					  
+					  if (match > -1 && matchedContactsSum++ < 15) {
+					      matchedContacts.unshift(e);
+					  }
+				      }
+			         }
+			      }
                           });
 
                       }
@@ -341,10 +366,13 @@ $.extend(state, {
                       // returns.invited;
                       // returns.invalidJid;
 
-                      // TODO jid test 与secretary重复了
+                      // TODO jid test ?secretary???
                       var jid = parameters.jid || '';
                       var jidReg = /^([A-Za-z0-9_\-\.])+\@([A-Za-z0-9_\-\.])+\.([A-Za-z]{2,4})$/;
-                      if (jid && jidReg.test(jid) === true) {
+                      
+                      //if (jid && jidReg.test(jid) === true) {
+                      
+                      if (jid && jid.indexOf("@") > -1) {
                           state.ui.filter.invite = state.INVITATION_STATE.INVITED;
                           returns.invited = true;
                           returns.invalidJid = false;
@@ -507,11 +535,10 @@ $.extend(state, {
                       var jid = parameters.jid;
 
                       if (state.user.contacts[jid].name === jid) {
-                          // 如果没有比较好的name，用vcard中的name字段覆盖
+                          // ????????name??vcard??name????
                           state.user.contacts[jid].name = parameters.name;
                       }
                       state.user.contacts[jid].avatar = parameters.avatar;
-
                       break;
                   case 'toggleConsole':
                       // parameters.expand option
@@ -574,7 +601,7 @@ $.extend(state, {
                           if (typeof(height) != 'undefined') {
                               thread.ui.messagebox.height = height;
                           } else {
-                              thread.ui.messagebox.height = 34; //原始大小
+                              thread.ui.messagebox.height = 34; //????
                           }
                       }
 
@@ -590,14 +617,14 @@ $.extend(state, {
                       message = $('<div />').text(message).html();
 
                       if (typeof(threadId) != 'undefined' && typeof(thread) != 'undefined') {
-                          //在thread里添加新的message
+                          //?thread?????message
                           var result = this._insertMessage(thread, {type: state.MESSAGE_TYPE.CHAT_SENT,
                                                 from: '',
                                                 time: this._now(),
                                                 timestamp: this._now(true),
                                                 content: message});
                           
-                          //清空正在输入的内容
+                          //?????????
                           thread.ui.messagebox.typing = '';
 
                           returns.removeOldest = result.removeOldest;
@@ -623,7 +650,7 @@ $.extend(state, {
                       thread = this._getThread(threadId, false);
 
                       if (thread) {
-                          // 存在线程，直接往里插入message
+                          // ???????????message
                           var result = this._insertMessage(thread, {type: type,
                                                 from: from,
                                                 time: this._now(),
@@ -640,7 +667,7 @@ $.extend(state, {
                           var collapsedThread = this._getThread(threadId, true);
 
                           if (collapsedThread) {
-                              // 存在collapsed线程
+                              // ??collapsed??
                               this._insertMessage(collapsedThread, {type: type,
                                                         from: from,
                                                         time: this._now(),
@@ -654,7 +681,7 @@ $.extend(state, {
                               };
 
                           } else {
-                              // 还没有线程，新建
+                              // ????????
                               // copy object
                               var createdThread = $.extend(true, {}, this._getThread('prototype'));
 
@@ -763,9 +790,9 @@ $.extend(state, {
                       }
 
                       state.ui.filter = {
-                          state: state.PANEL_STATE.COLLAPSED,  // 新会话面板状态 collapsed | expand
-                          scrollTop: 0, // 滚动位置
-                          filter: '',    // 用户filter文本框中的内容
+                          state: state.PANEL_STATE.COLLAPSED,  // ??????? collapsed | expand
+                          scrollTop: 0, // ????
+                          filter: '',    // ??filter???????
                           matchedContacts: []
                       };
                       returns.filter = state.ui.filter;
@@ -818,6 +845,7 @@ $.extend(state, {
                       var contacts = parameters.contacts;
 
                       for (index in contacts) {
+                      
                           if (contacts[index].invited) {
                               // invited not response
                               contacts[index].presence = {
@@ -831,10 +859,20 @@ $.extend(state, {
                                   message: state.PRESENCE_MESSAGE[state.PRESENCE_TYPE.REJECTED]
                               };
                           } else if (typeof(contacts[index].presence) === 'undefined') {
-                              contacts[index].presence = {
-                                  type: state.PRESENCE_TYPE.UNAVAILABLE,
-                                  message: state.PRESENCE_MESSAGE[state.PRESENCE_TYPE.UNAVAILABLE]
-                              };
+				if (!state.user.contacts[contacts[index].jid])
+				{    
+				        contacts[index].presence = { type: state.PRESENCE_TYPE.UNAVAILABLE, 
+				                                      message: state.PRESENCE_MESSAGE[state.PRESENCE_TYPE.UNAVAILABLE] 
+				                                   };
+				        
+                                } else {
+                          		var oldType = state.user.contacts[contacts[index].jid].presence.type;
+                          		var oldMsg = state.user.contacts[contacts[index].jid].presence.message;
+
+				        contacts[index].presence = { type: oldType, 
+				                                      message: oldMsg
+				                                   };                                
+                                }
                           }
                       }
                       
@@ -902,28 +940,28 @@ $.extend(state, {
                 });
             }
 
-            // 返回唯一的结果
+            // ???????
             return threads[0];
         },
         _getThreadByJid: function(jid) {
-            var threads = $.grep(state.threads, function(e, i) {
+            var threads = $.grep(state.threads, function(e, i) {         
                 return e.user.jid === jid;
             });
 
-            // 返回唯一的结果
+            // ???????
             return threads[0];
         },
         _moveThread: function(thread, endOrBegin) {
             var index = $.inArray(thread, state.threads);
             if (endOrBegin) {
-                // 移动到末尾
+                // ?????
                 state.threads.splice(index, 1);
                 state.threads.unshift(thread);
                 return true;
             } else {
                 var length = state.threads.length;
 
-                // 移动到头
+                // ????
                 state.threads.splice(index, 1);
                 state.threads.push(thread);
                 return true;

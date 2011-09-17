@@ -1,5 +1,5 @@
 /**
- * 封装micro-templating。处理boss state与页面显示的转换，以及界面上的所有操作。
+ * micro-templating?boss state
  */
 
 var assistant = (function() {
@@ -13,14 +13,14 @@ var _template = [
             '<link rel="stylesheet" href="<%=ui.path%><%=ui.css%>" id="gtalklet_css" media="screen"></link>',
         '<% } %>',
 
-        // 信息提示
+        // 
         '<div id="gtalklet_info" class="gtalklet_panel" style="display:none">',
             '<div class="gtalklet_title_bar <%=ui.log.level%>" data-switch-class="<%=ui.log.level%>">',
                 '<div class="gtalklet_info"><%=ui.log.message%></div>',
             '</div>',
         '</div>',
 
-        // 新建聊天线程按钮
+        // 
         '<div id="gtalklet_operation" class="gtalklet_panel" data-switch-class="" <% if (!user.signedin) { %>style="display:none"<% } %>>',
             '<div class="gtalklet_title_bar">',
                 '<% if (ui.filter.state == "collapsed") { %>',
@@ -31,7 +31,7 @@ var _template = [
             '</div>',
         '</div>',
 
-        // 新建聊天线程面板
+        // 
         '<div id="gtalklet_filter_panel" class="gtalklet_panel <%=ui.filter.state%>" data-switch-class="<%=ui.filter.state%>">',
             '<div class="gtalklet_panel_content_wrapper">',
                 '<div class="gtalklet_panel_content">',
@@ -72,7 +72,7 @@ var _template = [
             '<% } %>',
         '</div>',
 
-        // 聊天面板
+        // 
         '<% for(i in threads) { %>',
             '<% if (threads[i].ui.state !== "collapsed") { %>',
                 '<div class="gtalklet_thread gtalklet_panel <%=threads[i].ui.state%> <%=threads[i].ui.unread%> <%=threads[i].prototype%>" data-thread-id="<%=threads[i].id%>" data-jid="<%=threads[i].user.jid%>" data-switch-class="<%=threads[i].ui.state%>">',
@@ -115,7 +115,7 @@ var _template = [
             '<% } %>',
         '<% } %>',
 
-        // 控制台
+        // ?
         '<div id="gtalklet_console" class="gtalklet_panel <% if (ui.pendingThreads.length > 0) { %>unread<% } %>">',
             '<div class="gtalklet_title_bar">',
                 '<div class="gtalklet_icon_button gtalklet_new_message" data-pending-thread-ids="<%=ui.pendingThreads%>" <% if (ui.pendingThreads.length === 0) { %>style="display:none"<% } %>>',
@@ -133,10 +133,11 @@ var _template = [
             '</div>',
         '</div>',
 
-        // 原型
+        // 
         '<div id="gtalklet_prototype" style="display:none">',
             '<div class="gtalklet_contact prototype" data-jid="">',
                 '<div class="gtalklet_contact_wrapper">',
+                    '<div class="gtalklet_avatar"></div>',
                     '<div class="gtalklet_presence" data-switch-class=""></div>',
                     '<div class="gtalklet_contact_name"></div>',
                     '<div class="gtalklet_contact_jid"></div>',
@@ -182,7 +183,7 @@ init = function(_$) {
 },
 
 /**
- * 处理boss的state变化，更新显示
+ * boss?state?
  */
 handleStateChange = function(stateChange) {
     if (action[stateChange.report] && action[stateChange.report].callback) {
@@ -191,40 +192,40 @@ handleStateChange = function(stateChange) {
 },
 
 /**
- * 用state重建整个ui
+ * ?stateui
  */
 build = function(state, effect) {
     var $body = $('body');
-    // 如果还未注入模板，注入模板
+    // ?
     if ($('#gtalklet_template').length === 0) {
         $body.append(_template);
     }
-    // 如果还未注入gtalklet层，注入gtalklet层
+    // gtalkletgtalklet?
     if ($('#gtalklet_layer').length === 0) {
         $body.append('<div id="gtalklet_layer" style="display:none"></div>');
     }
-    // 重建html结构
+    // html
     $('#gtalklet_layer').replaceWith(_render(state));
     
-    // 初始化$layer
+    // ?$layer
     $layer = $('#gtalklet_layer');
 
-    // 判断content_script中的css有没有成功载入，如果没有，手动载入
+    // content_scriptcss?
     if ($layer.css('position') !== 'fixed') {
         var url = chrome.extension.getURL('css/style.css');
 	    $("<link rel='stylesheet' type='text/css' href='" + url + "' />").appendTo(body); 
     }
 
-    // 重建事件, js预处理
+    // , js?
     _prepare();
 
-    // 设置到适当的zoom级别
+    // zoom
     action.zoom.run();
 
-    // 将面板数限制到合适大小
+    // ?
     action.maxThread.run();
 
-    // 显示启用特效
+    // 
     if (effect) {
         $('#gtalklet_layer').css('bottom', '-500px').animate({bottom:'0px'}, 'fast', function() {
             $(this).removeAttr('style');
@@ -246,46 +247,46 @@ destroy = function(effect) {
 },
 
 /**
- * 重建事件, js预处理
+ * , js?
  */
 _prepare = function(block) {
-    // url转链接
+    // url?
     $(selectors.timeline).autoLink({'class': 'gtalklet_message_link'});
 
-    // 联系人高亮匹配
+    // ?
     var $contactName = $(selectors.contactName);
     var $contactJid = $(selectors.contactJid);
     var segment = $(selectors.filter).val();
     action.highlightMatches.run($contactName.add($contactJid), segment);
 
-    // 显示提示消息
+    // 
     action.info.run();
 
-    // 阻塞UI
+    // UI
     action.block.run();
 
-    // 设定面板滚动位置
+    // 
     action.bindScrollToProperPosition.delegate();
 
-    // 绑定事件
+    // 
     _bindOperations();
 },
 
 /**
- * 绑定事件
+ * 
  */
 _bindOperations = function() {
 
     $(window).resize(function(event) {
-        // 设置到适当的zoom级别
+        // zoom
         action.zoom.run();
-        // 根据页面宽度限制最大面板数
+        // ?
         action.maxThread.run(1, true);
     });
 
     action.prepareAutoResize.run($(selectors.thread));
 
-    // 点击timeline，激活 | 取消激活输入框
+    // timeline? | ?
     $layer.delegate(selectors.timeline, 'click', function() {
         if ($(this).data('moved') === 0) {
             $(this).trigger('REAL_CLICK');
@@ -320,7 +321,7 @@ _bindOperations = function() {
         action.read.run($thread.attr('data-thread-id'));
     });
 
-    // 回车提交表单
+    // 
     $layer.delegate(selectors.chatTextarea, 'keydown', function(event) {
         if (event.which == 13) {
             if (event.ctrlKey) {
@@ -332,22 +333,22 @@ _bindOperations = function() {
         }
     });
     
-    // 打开设置页
+    // ?
     $layer.delegate(selectors.options, 'click', function() {
         follower.report('showExtensionOption');
     });
 
-    // 登录超时，重试
+    // ?
     $layer.delegate('#gtalklet_info .gtalklet_retry', 'click', function(){
-        follower.report('signin'); // 没有回调，登录成功后会调signedin
+        follower.report('signin'); // signedin
     });
 
-    // 登录
+    // 
     $layer.delegate(selectors.presence + '.signin', 'click', function() {
-        follower.report('signin'); // 没有回调，登录成功后会调signedin
+        follower.report('signin'); // signedin
     });
     
-    // 绑定所有action
+    // action
     for (index in action) {
         if (action[index].delegate) {
             action[index].delegate();
@@ -392,7 +393,7 @@ action = {
             }
         }
     },
-    // 切换控制台菜单状态
+    // ?
     toggleConsole: {
         selector: selectors.myPresence + ' .gtalklet_presence:not(.gtalklet_options)',
         event: 'click',
@@ -410,13 +411,13 @@ action = {
             });
         },
         callback: function(returns) {
-            // returns.newState 控制台菜单的状态
+            // returns.newState 
             var $jumpList = $('#gtalklet_console .gtalklet_jump_list');
 
             $jumpList.switchToClass(returns.newState);
         }
     },
-    // 切换控制台菜单命令
+    // ?
     toggleConsoleCommands: {
         run: function(commands) {
             commands = commands || [];
@@ -431,7 +432,7 @@ action = {
             $jumpList.append($(fragment));
         }
     },
-    // 切换在线状态
+    // 
     changePresence: {
         selector: selectors.presence + ':not(.signin):not(.signout)',
         event: 'click',
@@ -458,7 +459,7 @@ action = {
             $presence.switchToClass(returns.presence.type).attr('title', returns.jid + ' ' + returns.presence.message);
         }
     },
-    // 收缩/展开面板
+    // /
     togglePanel: {
         selector: selectors.titleBar,
         event: 'click',
@@ -482,8 +483,8 @@ action = {
             });
         },
         callback: function(returns) {
-            // returns.panelId; 操作对象panelId
-            // returns.newState; 操作对象pannel的最终状态
+            // returns.panelId; panelId
+            // returns.newState; pannel?
             var panelId = returns.panelId;
             var newState = returns.newState;
             var $panel = $('div[data-thread-id="' + panelId + '"]');
@@ -500,7 +501,7 @@ action = {
             }
         }
     },
-    // 显示消息
+    // 
     showMessages: {
         run: function(threadId, messages, unread, removeOldest) {
             threadId = threadId || '';
@@ -529,7 +530,7 @@ action = {
                 $('.gtalklet_message:not(.prototype)', $timeline).first().remove();
             }
 
-            // 标题栏未读提示
+            // ?
             if (unread) {
                 if ($('textarea[name=gtalklet_chat]', $panel).is(':focus')) {
                     action.read.run($panel.attr('data-thread-id'));
@@ -538,11 +539,11 @@ action = {
                 }
             }
 
-            // timeline滚动到最下方
+            // timeline
             $timeline.scrollTop(9999);
         }
     },
-    // 展开/收缩filter面板
+    // /filter
     toggleFilterPanel: {
         selector: selectors.openFilterButton,
         event: 'click',
@@ -568,7 +569,7 @@ action = {
             });
         },
         callback: function(returns) {
-            // returns.newState 控制台菜单的状态
+            // returns.newState 
             var newState = returns.newState;
 
             var $filterPanel = $(selectors.filterPanel);
@@ -610,11 +611,11 @@ action = {
                 
             }).delegate(selectors.filter, 'keydown', function(event) {
                 if (event.which == 13) { 
-                    // 回车
+                    // 
                     var $currentMatchedContacts = $('.gtalklet_contact.current', $filterPanel);
                     $currentMatchedContacts.eq(0).click();
                 } else if (event.which == 38 || event.which == 40) { 
-                    // 上下箭头
+                    // 
                     var $matchedContacts = $('.gtalklet_contact', $filterPanel);
                     var $current = $matchedContacts.filter('.current');
         
@@ -622,11 +623,11 @@ action = {
         
                     var $target = null;
                     if ($current.length === 0) {
-                        // 还没有选中联系人
+                        // 
                         $target = $matchedContacts.last();
                         $target.addClass('current');
                     } else if ($current.length === 1) {
-                        // 已有选中联系人
+                        // ?
                         $current.removeClass('current');
                         $target = $current.eq(0)[method](':not(.prototype)'); 
                         $target.addClass('current');
@@ -644,6 +645,7 @@ action = {
             });
         },
         callback: function(returns) {
+       
             // returns.segment
             // returns.matchedContacts;
             // returns.matchedContactsSum;
@@ -654,10 +656,12 @@ action = {
             $(this.selector).val(segment).removeClass('invalid').removeClass('invited').removeAttr('title');
 
             var $contactsTimeline = $('#gtalklet_filter_panel .gtalklet_contacts');
+            
             if (matchedContacts.length > 0) {
                 $('.gtalklet_contact, .gtalklet_message:not(.prototype)', $contactsTimeline).remove();
                 var fragment = document.createDocumentFragment();
                 var more = matchedContactsSum - matchedContacts.length;
+                
                 if (more > 0) {
                     fragment.appendChild($('<div class="gtalklet_message">' + more + ' more...</div>').get(0));
                 }
@@ -666,14 +670,22 @@ action = {
                     var name = matchedContacts[index].name;
 
                     var presenceType = matchedContacts[index].presence.type;
-                    var presenceMessage = matchedContacts[index].presence.message;
+                    var presenceMessage = matchedContacts[index].presence.message == "" ? "&nbsp;" : matchedContacts[index].presence.message;
                     var $contact = $('.gtalklet_contact.prototype').clone().removeClass('prototype').attr('data-jid', jid).find('.gtalklet_presence').switchToClass(presenceType).attr('title', presenceMessage).end();
-    
+
                     var $contactName = $('.gtalklet_contact_name', $contact).text(name);
-                    var $contactJid = $('.gtalklet_contact_jid', $contact).text(jid);
+                    
+                    if ("data:;base64," == matchedContacts[index].avatar)
+                    	avatarImage = '<img width="32px" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAa9JREFUeNqcU8tKw1AQzU1v0retJSUQsgq4KEVwJy4F8TO6saviwg9wLbgRd7qouOp/iCs/QXAlpIFCaWkobfP2TEgkDQUfA4fMnce5M3MnLIoiIZVut5uqOtAHesl5BAyBTyEnLEvQ6XTos8cYMzVNK7ZaLYkMs9nMsyzLQSwR21kCMXsIw5AwaLfbcqVSkefzOSOQTjb4+knMN7YIgiAgXFDCcrlMzwLp5XJZgt5LbSl4ngCyv9lstlojcRyHwa/kZ7CL4B0EJ5IkbVXneV4I/0eeYFcLTxiaky8Vs3DxHf6mhefFYnGIFgZ4hSIZkOzA9pg8548VxFWsVis/nTRagikY5W8n5AkOgFtRFN/o2dKgZrPJsRsv0G8AI0sQT7vRaKjIv+ScX+m6LiuKIq/XawFVxMTValUolUrRdDr1TNN0fd+/h/kBsBicR7jxFYlFVVUlJDJKzj8jKhCwHzHRZDLxxuMxDfW8ALk2DOO4Xq/LGBRzXTdO3gXy0QWILdRqNYaKOMeQzlABt21b+K1QLPaEck85ytDQE6Np/0WwWPFmojV2l/y6/5HhlwADAB9vYrbjcbkvAAAAAElFTkSuQmCC" />'
+                    else
+                    	avatarImage = '<img width="32px" src="' + matchedContacts[index].avatar + '"/>';
+                    
+                    var $contactAvatar = $('.gtalklet_avatar', $contact).show().get(0).appendChild($(avatarImage).get(0));
+                    var $contactJid = $('.gtalklet_contact_jid', $contact).text(presenceMessage);
     
-                    fragment.appendChild($contact.show().get(0));
-                        
+                    fragment.appendChild($contact.show().get(0)); 
+                    
+                     
                     action.highlightMatches.run($contactName.add($contactJid), segment);
                 }
 
@@ -701,7 +713,7 @@ action = {
             }
         }
     },
-    // 新建聊天线程/ 激活以有
+    // / 
     createThread: {
         selector: selectors.filterPanel + ' .gtalklet_contact',
         event: 'click',
@@ -733,7 +745,7 @@ action = {
             action.createPanel.run(thread, true);
         }
     },
-    // 关闭线程
+    // 
     closeThread: {
         selector: selectors.close,
         event: 'click',
@@ -760,7 +772,7 @@ action = {
             $thread.remove();
         }
     },
-    // 创建面板
+    // 
     createPanel: {
         run: function(thread, collapseFilterPanel) {
             thread = thread || [];
@@ -779,13 +791,13 @@ action = {
                 $('.gtalklet_chat_form_mask', $createdThread).show();
             }
             
-            // 绑定滚动
+            // 
             action.scrollPanel.delegate($createdThread);
 
-            // 收起创建新线程面板
+            // ?
             if (collapseFilterPanel) {
                 action.toggleFilterPanel.run(false);
-                // 激活刚建立的线程面板
+                // 
                 $createdThread.insertAfter($(selectors.filterPanel));
             } else {
                 var $console = $(selectors.console);
@@ -793,17 +805,17 @@ action = {
             }
             action.activatePanel.run($createdThread, false);
 
-            // 绑定autoRezie
+            // autoRezie
             action.prepareAutoResize.run($createdThread);
 
-            // 如果messages中不只是存在prototype, 显示其中的message
+            // messagesprototype, ?message
             if (thread.messages && thread.messages.length > 1) {
                 action.showMessages.run(threadId, thread.messages);
             }
             action.maxThread.run();
         }
     },
-    // 激活面板
+    // 
     activatePanel: {
         run: function($panel, acceptThread) {
             acceptThread = acceptThread || false;
@@ -820,7 +832,7 @@ action = {
             }
         }
     },
-    // 接受新线程
+    // ?
     acceptThread: {
         selector: selectors.newMessage,
         event: 'click',
@@ -835,7 +847,7 @@ action = {
         delegate: function() {
             var base = this;
             $layer.delegate(this.selector, this.event, function() {
-                var threadId = $(this).attr('data-pending-thread-ids').split(',').shift();  //shift 先来的消息先出
+                var threadId = $(this).attr('data-pending-thread-ids').split(',').shift();  //shift ?
                 var pendingThreadIds = $(selectors.newMessage).attr('data-pending-thread-ids');
 
                 var index = pendingThreadIds.indexOf(threadId);
@@ -875,7 +887,7 @@ action = {
             }
         }
     },
-    // 同步正在输入的消息
+    // ?
     typing: {
         selector: selectors.chatTextarea,
         event: 'keyup',
@@ -905,7 +917,7 @@ action = {
             $textarea.val(content);
         }
     },
-    // 提交聊天表单
+    // 
     send: {
         selector: selectors.chatForm,
         event: 'submit',
@@ -931,7 +943,7 @@ action = {
             });
         },
         callback: function(returns) {
-            // returns.threadId; 消息所在threadId
+            // returns.threadId; threadId
             // returns.removeOldest;
             // returns.message;
             var message = returns.message;
@@ -943,7 +955,7 @@ action = {
             action.showMessages.run(threadId, [message], false, removeOldest);
         }
     },
-    // 读线程 
+    // ? 
     read: {
         selector: selectors.thread,
         
@@ -961,7 +973,7 @@ action = {
             $thread.removeClass('unread');
         }
     },
-    // 滚动thread面板
+    // thread
     scrollPanel: {
         selector: '.gtalklet_timeline',
         event: 'scroll',
@@ -984,7 +996,7 @@ action = {
             }
             $(element).bind(this.event, function() {
                 if (document.webkitVisibilityState == 'visible' && $layer.css('visibility') !== 'hidden') {
-                    // 判断$layer的visibility属性，防止Mac下的反馈
+                    // $layer?visibility?Mac
                     var threadId = $(this).closest(selectors.thread).attr('data-thread-id');
                     var scrollTop = $(this).attr('scrollTop');
                     base.run(threadId, scrollTop);
@@ -1006,13 +1018,13 @@ action = {
             //}, '200');
         }
     },
-    // 显示info
+    // info
     info: {
         run: function(message, level) {
             message = message || '';
             level = level || '';
 
-            // 保证info显示后在timeout时间后消失
+            // infotimeout?
             if (typeof(gtalklet_info_timeout) !== 'undefined') {
                 clearTimeout(gtalklet_info_timeout);
             }
@@ -1024,7 +1036,7 @@ action = {
                 level = $info.find('div.gtalklet_title_bar').attr('data-switch-class');
             }
 
-            // 如果info内容以 ... 结尾，不自动消失
+            // info? ... 
             if (message && $(message).text().lastIndexOf('...') === -1) {
                 var timeout = 3000;
                 gtalklet_info_timeout = setTimeout(function() {
@@ -1038,7 +1050,7 @@ action = {
             }
         }
     },
-    // 清除info
+    // info
     clearInfo: {
         run: function() {
             var base = this;
@@ -1053,7 +1065,7 @@ action = {
             });
         }
     },
-    // 高亮匹配
+    // 
     highlightMatches: {
         run: function(element, needle) {
             var regex = new RegExp('(' + needle + ')', 'i');
@@ -1064,7 +1076,7 @@ action = {
             });
         }
     },
-    // 限制线程数至窗口允许大小
+    // 
     maxThread: {
         run: function(diff, careful) {
             diff = diff || 1;
@@ -1072,7 +1084,7 @@ action = {
             var arbitrary = !careful;
             var pageWidth = $window.width();
 
-            // 300 预留的非panel空间, 200 panel 宽度
+            // 300 panel, 200 panel 
             var newMaxThread = Math.floor((pageWidth - 300) / 200);  
             
             if (arbitrary || newMaxThread < maxThread) {
@@ -1086,7 +1098,7 @@ action = {
             }
         }
     },
-    // 关闭最久未使用的线程
+    // 
     closeOldestThread: {
         run: function(diff) {
             diff = diff || 1;
@@ -1105,7 +1117,7 @@ action = {
             }
         }
     },
-    // 绑定autoResize
+    // autoResize
     prepareAutoResize: {
         run: function($thread) {
             return;
@@ -1145,11 +1157,11 @@ action = {
             $textarea.css('height', height);
         }
     },
-    // UI阻塞 / 取消阻塞
+    // UI / 
     block: {
         run: function(isBlock) {
             if (typeof(isBlock) === 'undefined') {
-                // 没有给出参数时，根据#gtalklet_layer上的blocked属性决定是block还是unblock
+                // #gtalklet_layerblocked?blockunblock
                 var blocked = $('#gtalklet_layer').data('blocked');
                 if (blocked) {
                     $(selectors.sensitive).block({message: null, overlayCSS: {cursor: 'auto'}, fadeIn: 0}).find('textarea:focus').blur();
@@ -1184,7 +1196,7 @@ action = {
             }
         }
     },
-    // 所有可滚动面板，设定滚动位置
+    // 
     scrollToProperPosition: {
         run: function() {
             // no paramters
@@ -1198,7 +1210,7 @@ action = {
             }, '0');
         }
     },
-    // 接收到log信息
+    // ?log
     log: {
         callback: function(returns) {
             // returns.message
@@ -1221,7 +1233,7 @@ action = {
             action.block.run(returns.blocked);
         }
     },
-    // 用户登陆完成
+    // 
     connected: {
         callback: function(returns) {
             // returns.blocked
@@ -1242,18 +1254,18 @@ action = {
             action.block.run(returns.blocked);
         }
     },
-    // 接收到新消息, 已有面板
+    // , 
     recieved: {
         callback: function(returns) {
-            // returns.threadId; 消息所在threadId
-            // returns.message; 消息
-            // returns.unread; 是否增加未读标记
+            // returns.threadId; threadId
+            // returns.message; 
+            // returns.unread; 
             // returns.removeOldest
             var messages = [returns.message];
             action.showMessages.run(returns.threadId, messages, returns.unread, returns.removeOldest);
         }
     },
-    // 接受到新消息，需要新建面板，显示提示
+    // 
     recievedThread: {
         callback: function(returns) {
             // return.jid
@@ -1278,7 +1290,7 @@ action = {
             $presence.hide();
         }
     },
-    // 有用户的在线状态改变
+    // 
     presence: {
         callback: function(returns) {
             // returns.jid; 
@@ -1294,7 +1306,7 @@ action = {
     toggleHidden: {
         callback: function(returns) {
             if (returns.hide && $layer) {
-                // 用visibility:hidden, 避免与子元素的display:none切换 造成冲突失效
+                // ?visibility:hidden, ?display:none 
                 $layer.css('visibility', 'hidden');
             } else {
                 $layer.css('visibility', 'visible');
@@ -1325,7 +1337,7 @@ action = {
             if (returns.invited) {
                 $(this.selector).addClass('invited').attr('title', 'Invited');
             } else if (returns.invalidJid){
-                // jid不合法
+                // jid?
                 $(selectors.filter).addClass('invalid').attr('title', 'Invalid JID: ' + returns.jid);
             } else {
                 
@@ -1390,7 +1402,7 @@ action = {
     zoom: {
         run: function() {
             var ratio = $(document).width() / document.width;
-            //取小数点后三位精度. 避开不同zoom级别时，计算后尺寸变化太大的问题
+            //?. zoom
             $layer.css('zoom', Math.floor(ratio*1000)/1000);  
         }
     },
