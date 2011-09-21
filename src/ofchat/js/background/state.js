@@ -329,8 +329,10 @@ $.extend(state, {
 				      
                                  } else {
                               
+                              	      if (segment[0] == " ") segment = segment.substring(1);
+                              	      
 				      var jid = e.jid.toLowerCase();
-				      var name = e.name.toLowerCase();
+				      var name = e.name ? e.name.toLowerCase() : "";
 
 				      var match = jid.indexOf(segment);
 
@@ -534,13 +536,13 @@ $.extend(state, {
                       // no returns
                       var jid = parameters.jid;
 
-                      if (state.user.contacts[jid].name === jid) {
-                          // ????????name??vcard??name????
+                      if (parameters.name && parameters.name != "") {
                           state.user.contacts[jid].name = parameters.name;
                       }
                       state.user.contacts[jid].avatar = parameters.avatar;
                       break;
                   case 'toggleConsole':
+                  
                       // parameters.expand option
                       var expand = parameters.expand;
 
@@ -639,18 +641,22 @@ $.extend(state, {
                       // parameters.type
                       // parameters.message
                       // parameters.html = false
+                      // parameters.jid
                       
                       threadId = parameters.threadId;
                       var from = parameters.from;
                       var type = state.MESSAGE_TYPE[parameters.type.toUpperCase()];
-                      var message = parameters.message;
                       
-                      if (!parameters.html) {
-                          message = $('<div />').text(message).html();
-                      }
-
-		      message = this._applyFilters(parameters.message);
+                      message = $('<div />').text(parameters.message).html();
+		      message = this._applyFilters(message);
 		      
+		      if (type == "groupchat")
+		      {
+				var mucNick = Strophe.getResourceFromJid(parameters.jid);
+				message = "<b>" + mucNick + "</b>: " + message;
+		      }
+
+		      		      
                       thread = this._getThread(threadId, false);
 
                       if (thread) {
@@ -691,10 +697,12 @@ $.extend(state, {
 
                               var user = {
                                   jid: from,
+                                  avatar: state.user.contacts[from].avatar,
                                   name: state.user.contacts[from] ? state.user.contacts[from].name : from,
                                   presence: state.user.contacts[from] ? state.user.contacts[from].presence : {type: '', message: ''}
                               };
                               createdThread.id = threadId;
+                              createdThread.chatType = type;
                               createdThread.user = $.extend(true, {}, createdThread.user, user);
                               createdThread.ui.state = state.PANEL_STATE.COLLAPSED;
 
@@ -717,6 +725,7 @@ $.extend(state, {
                               returns.name = user.name;
                               returns.threadId = threadId;
                           }
+                         
                       }
 
                       break;
@@ -726,6 +735,7 @@ $.extend(state, {
                       // parameters.reason;
                       //
                       break;
+                      
                   case 'acceptThread':
                       // parameters.threadId
                       // returns.createdThread
@@ -747,13 +757,15 @@ $.extend(state, {
 
                       break;
                   case 'toggleFilterPanel':
+                  
                       // parameters.expand option
                       var expand = parameters.expand;
 
                       if (typeof(expand) === 'undefined') {
                           //toggle
                           if (state.ui.filter.state === state.PANEL_STATE.COLLAPSED) {
-                              newState = state.PANEL_STATE.EXPANDED;
+                              newState = state.PANEL_STATE.EXPANDED;                                                        
+                              
                           } else {
                               newState = state.PANEL_STATE.COLLAPSED;
                           }
@@ -766,6 +778,7 @@ $.extend(state, {
                       returns.newState = newState;
                       break;
                   case 'createThread':
+                  
                       // parameters.jid
                       var jid = parameters.jid;
                       var user = state.user.contacts[jid];
@@ -879,7 +892,8 @@ $.extend(state, {
                                 }
                           }
                           
-                          contacts[index].avatar = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAgACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD26p7K0ub2byrWF5X77RwPcntUFeg+CYok0CJozkyMzP8A72cfyAoA4vUdLv8ATz/pVuyr2ccr+YqlXquowQXFlLDcKDEyHdn09a8qFAB7V3/hDS7vTrVjczACXDCED7pwOp9exHtXOeCbbz9cSQ42wIXOfXoP55/CvQaAM/xBZXF/pkltbziJnxnI4YZ6E9hXm1xDLbzvBMhSRDhga9Zrj/iFaAG3vgef9Uw/Mj+tAH//2Q==';
+                          if (!contacts[index].avatar)
+                          	contacts[index].avatar = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAgACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD26p7K0ub2byrWF5X77RwPcntUFeg+CYok0CJozkyMzP8A72cfyAoA4vUdLv8ATz/pVuyr2ccr+YqlXquowQXFlLDcKDEyHdn09a8qFAB7V3/hDS7vTrVjczACXDCED7pwOp9exHtXOeCbbz9cSQ42wIXOfXoP55/CvQaAM/xBZXF/pkltbziJnxnI4YZ6E9hXm1xDLbzvBMhSRDhga9Zrj/iFaAG3vgef9Uw/Mj+tAH//2Q==';
                       }
                       
                       state.user.contacts = $.extend(state.user.contacts, parameters.contacts);
@@ -976,16 +990,16 @@ $.extend(state, {
         
 	_applyFilters: function (body) 
 	{
-		body = body.replace(/&/gi, "&amp;");
-		body = body.replace(/</gi, "&lt;");
-		body = body.replace(/>/gi, "&gt;");
-		body = body.replace(/\n/gi, "<br>");
-		body = body.replace(/\[b\]/gi, "<b>");
-		body = body.replace(/\[\/b\]/gi, "</b>");
-		body = body.replace(/\[i\]/gi, "<i>");
-		body = body.replace(/\[\/i\]/gi, "</i>");
-		body = body.replace(/\[u\]/gi, "<u>");
-		body = body.replace(/\[\/u\]/gi, "</u>");
+		//body = body.replace(/&/gi, "&amp;");
+		//body = body.replace(/</gi, "&lt;");
+		//body = body.replace(/>/gi, "&gt;");
+		//body = body.replace(/\n/gi, "<br>");
+		//body = body.replace(/\[b\]/gi, "<b>");
+		//body = body.replace(/\[\/b\]/gi, "</b>");
+		//body = body.replace(/\[i\]/gi, "<i>");
+		//body = body.replace(/\[\/i\]/gi, "</i>");
+		//body = body.replace(/\[u\]/gi, "<u>");
+		//body = body.replace(/\[\/u\]/gi, "</u>");
 
 		body = body.replace(/:\)/gi, "<img src='" + chrome.extension.getURL("images/emoticons/happy.gif") + "' border='0'>");
 		body = body.replace(/:-\)/gi, "<img src='" + chrome.extension.getURL("images/emoticons/happy.gif") + "' border='0'>");

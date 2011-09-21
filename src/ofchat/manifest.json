@@ -13,12 +13,12 @@
       "16": "icon.gif",
       "48": "icon48.gif"
    },
-   "minimum_chrome_version": "15",
+   "minimum_chrome_version": "14",
    "name": "OfChat",
    "options_page": "options/index.html",
    "page_action": {
       "default_title": "Openfire Chat"
    },
    "permissions": [ "tabs", "notifications", "idle", "http://*/", "https://*/", "ws://*/", "wss://*/" ],
-   "version": "0.0.0.1"
+   "version": "0.0.0.3"
 }

@@ -1179,7 +1179,7 @@ Strophe.Handler.prototype = {
                 Strophe.fatal("error: " + this.handler);
             }
 
-            throw e;
+            //throw e;
         }
 
         return result;

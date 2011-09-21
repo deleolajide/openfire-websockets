@@ -771,9 +771,7 @@ Openfire.Connection.prototype = {
      */    
 
     _textToXML: function (text) {
-    
-    	console.log(text);
-    	
+        	
         var doc = null;
         
         if (window['DOMParser']) {

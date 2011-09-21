@@ -12,6 +12,7 @@ var _secretary = null,
     _ports = {},
 
     _option_url = chrome.extension.getURL('options/index.html'),
+
     _notifications = {},
 
     excludedUrls = null,
@@ -174,6 +175,7 @@ _callbackOnRequest = function(request, port) {
                 // ??????tab
                 chrome.tabs.getAllInWindow(null,function(tabs){
                     var option_tab = tabs.filter(function(t) { return t.url === _option_url; });
+                    
                     if(option_tab.length){
                         // ?????????
                         chrome.tabs.update(option_tab[0].id, {selected: true});
@@ -397,6 +399,7 @@ showNotification = function(icon, title, message) {
  */
 log = function(message, level) {
     console.log(message);
+    
     if (typeof(level) === 'undefined') {
         level = 'info';
     }

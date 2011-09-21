@@ -192,7 +192,7 @@ var features = {
      * @provides send
      * @provides changePresence
      */
-    'xmpp': {
+    xmpp: {
         _connection: null,
         that: this,
 
@@ -203,6 +203,13 @@ var features = {
         register: function(connection, secretary) {
             this._connection = connection;
 
+	    Strophe.addNamespace('PRIVATE', 'jabber:iq:private');
+	    Strophe.addNamespace('BOOKMARKS', 'storage:bookmarks');
+	    Strophe.addNamespace('PRIVACY', 'jabber:iq:privacy');
+	    Strophe.addNamespace('DELAY', 'jabber:x:delay');
+            Strophe.addNamespace('DISCO_ITEMS', "http://jabber.org/protocol/disco#items");
+            Strophe.addNamespace('DISCO_INFO',  "http://jabber.org/protocol/disco#info");			
+            
             secretary.addHandler('changePresence', this._changePresence);
             secretary.addHandler('send', this._send);
             secretary.addHandler('invite', this._invite);
@@ -211,19 +218,39 @@ var features = {
 
             this._connection.addHandler(this._messageCallback, null, 'message');
             this._connection.addHandler(this._presenceCallback, null, 'presence');
+            this._connection.addHandler(this._rosterCallback, Strophe.NS.ROSTER, 'iq');
+            this._connection.addHandler(this._bookmarksCallback, Strophe.NS.PRIVATE, 'iq');
+            
         },
         connected: function() {
-            this._loadSignedInUser(Strophe.getBareJidFromJid(this._connection.jid));
-            this._loadContacts();
+            this._loadSignedInUser(Strophe.getBareJidFromJid(this._connection.jid));    
+            this._loadContacts();              
         },
 
+	_autojoin: function() {
+               
+	    var iq = $iq({to: this._connection.domain, type: 'get'}).c('query', {xmlns: Strophe.NS.PRIVATE}).c('storage', {xmlns: Strophe.NS.BOOKMARKS});	    	    
+            this._connection.sendIQ(iq);           
+	},
+		
         _send: function(parameters) {
             //TODO
+            
             var to = features['xmpp']._toFullJid[parameters.jid] || parameters.jid;
             var threadId = parameters.threadId;
             var message = parameters.message;
 
-            var iq = $msg({to: to, type: 'chat'}).c('body').t(message);
+	    var threads = $.grep(state.threads, function(e, i) {return e.id === threadId});
+            var thread = threads[0];
+            
+            if (!thread.chatType) thread.chatType = "chat";
+            
+            if (thread.chatType == "chat") 
+            	var to = features['xmpp']._toFullJid[parameters.jid] || parameters.jid;
+            else
+            	var to = parameters.jid;
+            
+            var iq = $msg({to: to, type: thread.chatType}).c('body').t(message);
 
             this._connection.send(iq);
         },
@@ -287,11 +314,11 @@ var features = {
             this._connection.sendIQ(iq,
                 function(response){
                     var $response = $(response);
+                   
                     var name = $response.find('vCard FN').text();
                     var $photo = $response.find('vCard PHOTO');
                     var avatar = 'data:' + $photo.find('TYPE').text() + ';base64,' + $photo.find('BINVAL').text();
-                    console.log("avatar for " + jid + " " + avatar);
-                    var response = {jid: jid.toLowerCase(), name: name || jid.toLowerCase(), avatar: avatar};                    
+                    var response = {jid: jid.toLowerCase(), name: name, avatar: avatar};                    
                     callback(response);
                 }
             );
@@ -309,7 +336,7 @@ var features = {
                     
                     $this = $(this);
                     var jid = Strophe.getBareJidFromJid($this.attr('jid')).toLowerCase();
-                    var name = $this.attr('name') || jid;
+                    var name = $this.attr('name') || Strophe.getNodeFromJid(jid);
                     var invited = !!$this.attr('ask');
                     var rejected = $this.attr('subscription') == 'none';
 
@@ -326,9 +353,50 @@ var features = {
                 }
                 
                 boss.log('Signed In');
+                
+                features.xmpp._autojoin();
             });
         },
+
+        _bookmarksCallback: function(msg) 
+        { 
+		$('conference', msg).each(function() 
+		{		
+			var item = $(this);
+
+			if(item.attr('autojoin') == "true") 
+			{
+				var jid = item.attr('jid');			
+				var from = Strophe.getBareJidFromJid(jid);				
+				
+				var contacts = {};
+				var name = item.attr('name');
+				var avatar = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAgACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6E+LPjLUNIuoPD2izLbaldQ+cbl4wwijyVG0EY3EgnJyBt5BzXkFl4k1u08YbLy6+1Xsrgx3vCyR/Lg5CDDD2469cZpnxy8ZWWs+O0l0XfjT4TZSTk7TK6yNu2jOCoPAPUlm7AZr/AApv7S5vr2+v42eUBMeYBuQfMDx2ydtfEZti5yru0tFt5Hv5c6Ps1H7TPVE8Ya3F5Miasblo2HmQSQJFvHocqCoPTNehaFr1vqllBdQnCzoHCsMEZHSvAvGWsW9rBPfwyiAIMI5HGTnHQ1u/BrxWNWsUUFUkt2Ecsa5wvGRjPPT9QR2r0OH8TWrSm5yvHpfv/kGa4JU6SqRjbuec+Ofhb4r0PWbtYbZryxHzQ3aFAsi5OAVLZDAAZGMdwTzXEWN7PpmpGVPkuomKvjg7u6ntkdK+5NasFvLZkPGVIrxXxl8INKu72a+imubaSQgsI9hUnjnDIcH6V9NleEweEqznUhzcys76o+XxVOpOzpys0eS/FLVtP1PxTJY6YJF0yNkjgkJMhb5Qd4Dcg5bp7YrqPgbZ3NhCLyVgTdRptUfwqC5HPvv6emKkf4WWqThpbm5mVT90xxKG9jhBXoHhDw99nMSLGkaJgAAYwOa7MS8K4xjh4W5fK33muGq4qMZxqTupWb9Uf//Z";
+				var presence = { type: state.PRESENCE_TYPE.CHAT,  message: state.PRESENCE_MESSAGE[state.PRESENCE_TYPE.CHAT]};
+				
+				contacts[jid] = {jid: jid, name: name, invited: false, rejected: false, presence: presence, avatar: avatar};
+				
+				boss.report('loadContacts', {contacts: contacts});				
+				
+				features.xmpp._connection.sendIQ($iq({type: 'get', from: state.user.jid, to: jid}).c('query', {xmlns: Strophe.NS.DISCO_INFO}));									
+				features.xmpp._connection.muc.join(jid, Strophe.getNodeFromJid(state.user.jid));							
+			}
+		});
+		
+		return true;	    	    
+        },
+        
+        _rosterCallback: function(roster) {
+            $roster = $(roster);
+            var from = Strophe.getBareJidFromJid($roster.attr('from')).toLowerCase();  
+	    
+	    // TODO new contacts
+
+	    return true;
+        },
+        
         _messageCallback: function(message) {
+
             $message = $(message);
 
             var jid = $message.attr('from').toLowerCase();
@@ -336,7 +404,7 @@ var features = {
             var threadId = $.md5(from.toLowerCase()); // getThreadId;
             var type = $message.attr('type');
             var messageText = $message.children('body').text();
-
+            
             // ??FullJid
             // todo
             features['xmpp']._toFullJid[from] = jid;
@@ -353,16 +421,35 @@ var features = {
             }
             
             var $invite = $message.find('invite');
-            if (false && $invite) {
+            
+            if (false && $invite) 
+            {
                 // group chat invitation
-                var invitedFrom = Strophe.getBareJidFromJid($invite.attr('from')).toLowerCase();
+            
+            	var invitedFrom = Strophe.getBareJidFromJid($invite.attr('from')).toLowerCase();
                 var reason = $invite.find('reason').text();
                 boss.report('recievedGroupChatInvitation', {from: invitedFrom, chatroom: from, reason: reason});
+                
             } else {
                 // normal chat message
-                if (messageText) {
-                    boss.showNotification('', from, messageText);
-                    boss.report('recieved', {from: from, threadId: threadId, type: type, message: messageText});
+                
+                var showMessage = true;
+                
+                if (messageText) 
+                {                
+                    if (type == "chat") 
+                    {
+                    	boss.showNotification('', from, messageText);
+                    
+                    } else {
+                    
+			var mucNick = Strophe.getResourceFromJid(jid);
+			var thisNick = Strophe.getNodeFromJid(state.user.jid);
+			
+			if (mucNick == thisNick) showMessage = false;
+		    }
+		      
+                    if (showMessage) boss.report('recieved', {from: from, threadId: threadId, type: type, message: messageText, jid: jid});
                 }
             }
 

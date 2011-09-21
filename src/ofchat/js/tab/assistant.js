@@ -554,6 +554,9 @@ action = {
 
         run: function(expand) {
             var base = this;
+            
+            if (typeof(expand) === 'undefined' || !expand) action.filter.run(" ");
+            
             follower.report('toggleFilterPanel', {expand: expand}, function(stateChange) {
                 base.callback(stateChange.returns);
             });
