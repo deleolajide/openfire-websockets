@@ -690,7 +690,7 @@ Openfire.Connection.prototype = {
         this.addTimeds = [];
         this.addHandlers = [];
         
-        if(this._ws.readyState != this.ws.CLOSED)
+        if(this._ws.readyState != this._ws.CLOSED)
         {
           this._ws.close();
         }

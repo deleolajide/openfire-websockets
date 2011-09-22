@@ -192,17 +192,38 @@ var features = {
      * @provides send
      * @provides changePresence
      */
-    xmpp: {
+    'xmpp': {
         _connection: null,
         that: this,
 
         _toFullJid: {}, // ??bareJid fullJid??
         _user: {},  // ???????
 
+        _now: function(timestamp) 
+        {
+            var now = new Date();
+            
+            if (timestamp) {
+                return now.getTime();
+            } else {
+                return now.toLocaleTimeString();
+            }
+        },
 
+	_getXMPPDate: function(xmppDate) 
+	{
+		var temp = xmppDate.split("T");				
+		var myDate = temp[0].split("-");
+		var myTime = temp[1].split(":");
+
+		return new Date(myDate[0], myDate[1] - 1, myDate[2], myTime[0], myTime[1], myTime[2].split(".")[0], 0);
+	},
+		
         register: function(connection, secretary) {
             this._connection = connection;
 
+	    console.log("registering..xmpp");	
+		
 	    Strophe.addNamespace('PRIVATE', 'jabber:iq:private');
 	    Strophe.addNamespace('BOOKMARKS', 'storage:bookmarks');
 	    Strophe.addNamespace('PRIVACY', 'jabber:iq:privacy');
@@ -236,7 +257,6 @@ var features = {
         _send: function(parameters) {
             //TODO
             
-            var to = features['xmpp']._toFullJid[parameters.jid] || parameters.jid;
             var threadId = parameters.threadId;
             var message = parameters.message;
 
@@ -246,7 +266,7 @@ var features = {
             if (!thread.chatType) thread.chatType = "chat";
             
             if (thread.chatType == "chat") 
-            	var to = features['xmpp']._toFullJid[parameters.jid] || parameters.jid;
+            	var to = features['xmpp']._toFullJid[parameters.jid]; // || parameters.jid;
             else
             	var to = parameters.jid;
             
@@ -323,6 +343,71 @@ var features = {
                 }
             );
         },
+        
+        _loadMessages: function(jid, callback) {
+            // http://xmpp.org/extensions/xep-0136.html - archiving
+            
+            var historyChats = 2;            
+            var resultUser = {};
+            var iq = $iq({type: 'get'}).c('list', {xmlns: 'urn:xmpp:archive', 'with': jid}); //.c('set', {xmlns: 'http://jabber.org/protocol/rsm'}).c('max').t('2');
+
+            this._connection.sendIQ(iq, function(response)
+            {
+                var $response = $(response);
+                var nCount = 0;
+                var chats = $('chat', response);
+                var historyCount = historyCount + chats.size();
+
+		$(chats).each(function() 
+		{
+		    nCount++;
+
+		    if (historyChats + nCount >= chats.size()) 
+		    {		
+			    var item = $(this);
+			    var party = item.attr('with');
+			    var threadId = $.md5(party.toLowerCase());
+			    var start = item.attr('start');
+			    var chatDate = features['xmpp']._getXMPPDate(start);		    
+
+			    var iq = $iq({type: 'get', to: jid}).c('retrieve', {xmlns: 'urn:xmpp:archive', 'with': party, start: start});
+
+			    features['xmpp']._connection.sendIQ(iq, function(response)
+			    {
+				var $response = $(response);
+
+				$('chat', response).each(function() 
+				{		
+					var chatwith = $(this);
+					$(chatwith).children().each(function() 
+					{			
+					    var chat = $(this);
+
+					    if (this.nodeName == "to")
+					    {
+						var secs = $(chat).attr('secs');
+						var body = $(chat).find('body').text();	
+						var from = state.user.jid;
+
+					    } else {
+						var secs = $(chat).attr('secs');
+						var body = $(chat).find('body').text();	
+						var from = jid;
+					    }
+
+					    var time = chatDate.toLocaleTimeString();
+					    var timestamp = chatDate.getTime() + (secs * 1000);
+
+					    var response = {direction: this.nodeName, from: from, threadId: threadId, type: 'chat', message: body, jid: party, time: time, timestamp: timestamp, newMsg: false}
+					    callback(response);
+					});
+				});
+			    });
+		     }
+		    
+                });
+            });
+        },        
         _loadContacts: function() {
             boss.log('Loading Contacts...');
 
@@ -350,6 +435,15 @@ var features = {
                     self._loadUser(contacts[index].jid, function(response) {
                         boss.report('loadUser', response);
                     });
+
+                    self._loadMessages(contacts[index].jid, function(response) {
+                  
+                  	if (response.direction == "from")
+                        	boss.report('recieved', response);
+                        else
+				boss.report('send', response);                        
+                    }); 
+                   
                 }
                 
                 boss.log('Signed In');
@@ -404,10 +498,14 @@ var features = {
             var threadId = $.md5(from.toLowerCase()); // getThreadId;
             var type = $message.attr('type');
             var messageText = $message.children('body').text();
+            var time = features['xmpp']._now();
+            var timestamp = features['xmpp']._now(true);
+            
             
             // ??FullJid
             // todo
-            features['xmpp']._toFullJid[from] = jid;
+            
+            //features['xmpp']._toFullJid[from] = jid;
             
             //offline
             var $error = $message.children('error');
@@ -449,7 +547,7 @@ var features = {
 			if (mucNick == thisNick) showMessage = false;
 		    }
 		      
-                    if (showMessage) boss.report('recieved', {from: from, threadId: threadId, type: type, message: messageText, jid: jid});
+                    if (showMessage) boss.report('recieved', {from: from, threadId: threadId, type: type, message: messageText, jid: jid, time: time, timestamp: timestamp, newMsg: true});
                 }
             }
 
@@ -503,7 +601,7 @@ var features = {
                         show = 'unavailable';
                         // ?FullJid?????resource
                         if (features['xmpp']._toFullJid[from]) {
-                            delete features['xmpp']._toFullJid[from];
+                            //delete features['xmpp']._toFullJid[from];
                         }
                     } else {
                         // ????
@@ -511,6 +609,8 @@ var features = {
                         if ($show.length == 1) {
                             show = $show.text();
                         }
+                        
+                        features['xmpp']._toFullJid[from] = $presence.attr('from');
                     }
 
                     var $status = $presence.find('status');
@@ -580,6 +680,25 @@ var features = {
         register: function(connection) {
         }
     },
+    
     'http://jabber.org/protocal/rosterx': {
     },
+    
+    'urn:xmpp:archive:manage': {
+        register: function(connection, secretary) 
+        {
+		console.log("registering..urn:xmpp:archive:manage");		
+		this._connection = connection;
+		this._secretary = secretary;        
+        }
+    }, 
+    
+    'urn:xmpp:archive:auto': {
+        register: function(connection, secretary) 
+        {		
+		console.log("registering..urn:xmpp:archive:auto");
+		this._connection = connection;
+		this._secretary = secretary;		
+        }
+    }     
 };

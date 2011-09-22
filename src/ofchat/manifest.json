@@ -19,6 +19,6 @@
    "page_action": {
       "default_title": "Openfire Chat"
    },
-   "permissions": [ "tabs", "notifications", "idle", "http://*/", "https://*/", "ws://*/", "wss://*/" ],
-   "version": "0.0.0.3"
+   "permissions": [ "tabs", "notifications", "idle", "http://*/", "https://*/", "ws://*/", "wss://*/", "extension://*/" ],
+   "version": "0.0.0.4"
 }

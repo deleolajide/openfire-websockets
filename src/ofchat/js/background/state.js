@@ -610,31 +610,61 @@ $.extend(state, {
                       break;
                   case 'send':
                       //parameters.threadId
-                      //paremeters.message
+                      //parameters.message
+                      // parameters.timestamp
+                      // parameters.time   
+                     
                       threadId = parameters.threadId;
                       var message = parameters.message;
                       
-                      thread = this._getThread(threadId);
+                      thread = this._getThreadById(threadId);
                       // encode html tag
                       message = $('<div />').text(message).html();
                       message = this._applyFilters(message);
 
-                      if (typeof(threadId) != 'undefined' && typeof(thread) != 'undefined') {
-                          //?thread?????message
+                      if (thread) {
+                     
                           var result = this._insertMessage(thread, {type: state.MESSAGE_TYPE.CHAT_SENT,
                                                 from: '',
-                                                time: this._now(),
-                                                timestamp: this._now(true),
+                                                time: parameters.time ? parameters.time : this._now(),
+                                                timestamp: parameters.timestamp ? parameters.timestamp : this._now(true),
                                                 content: message});
-                          
+                         
                           //?????????
                           thread.ui.messagebox.typing = '';
 
                           returns.removeOldest = result.removeOldest;
                           returns.message = result.message;
+                          
+                      } else {
+                     
+                      	      var from = parameters.from;
+                              var createdThread = $.extend(true, {}, this._getThread('prototype'));
+
+                              var user = {
+                                  jid: from,
+                                  avatar: state.user.contacts[from].avatar,
+                                  name: state.user.contacts[from] ? state.user.contacts[from].name : from,
+                                  presence: state.user.contacts[from] ? state.user.contacts[from].presence : {type: '', message: ''}
+                              };
+                              createdThread.id = threadId;
+                              createdThread.chatType = parameters.type;
+                              createdThread.user = $.extend(true, {}, createdThread.user, user);
+                              createdThread.ui.state = state.PANEL_STATE.COLLAPSED;
+
+                              delete createdThread.prototype;
+
+                              state.threads.unshift(createdThread);
+                              
+                              this._insertMessage(createdThread, {type: state.MESSAGE_TYPE.CHAT_SENT,
+                                                        from: '',
+                                                	time: parameters.time ? parameters.time : this._now(),
+                                                	timestamp: parameters.timestamp ? parameters.timestamp : this._now(true),
+                                                        content: message});  
+                                                       
                       }
 
-                      break;
+                      break;                                          
                   case 'recieved':
                       // parameters.from
                       // parameters.threadId
@@ -642,15 +672,20 @@ $.extend(state, {
                       // parameters.message
                       // parameters.html = false
                       // parameters.jid
+                      // parameters.timestamp
+                      // parameters.time   
+                      // parameters.newMsg
                       
-                      threadId = parameters.threadId;
+                      var timestamp = parameters.timestamp;
+                      var time = parameters.time;
+                      var threadId = parameters.threadId;
                       var from = parameters.from;
                       var type = state.MESSAGE_TYPE[parameters.type.toUpperCase()];
                       
                       message = $('<div />').text(parameters.message).html();
 		      message = this._applyFilters(message);
 		      
-		      if (type == "groupchat")
+		      if (parameters.type == "groupchat")
 		      {
 				var mucNick = Strophe.getResourceFromJid(parameters.jid);
 				message = "<b>" + mucNick + "</b>: " + message;
@@ -663,8 +698,8 @@ $.extend(state, {
                           // ???????????message
                           var result = this._insertMessage(thread, {type: type,
                                                 from: from,
-                                                time: this._now(),
-                                                timestamp: this._now(true),
+                                                time: time,
+                                                timestamp: timestamp,
                                                 content: message});
                           thread.ui.unread = 'unread';
 
@@ -680,8 +715,8 @@ $.extend(state, {
                               // ??collapsed??
                               this._insertMessage(collapsedThread, {type: type,
                                                         from: from,
-                                                        time: this._now(),
-                                                        timestamp: this._now(true),
+                                                        time: time,
+                                                        timestamp: timestamp,
                                                         content: message});
 
                               var user = {
@@ -702,7 +737,7 @@ $.extend(state, {
                                   presence: state.user.contacts[from] ? state.user.contacts[from].presence : {type: '', message: ''}
                               };
                               createdThread.id = threadId;
-                              createdThread.chatType = type;
+                              createdThread.chatType = parameters.type;
                               createdThread.user = $.extend(true, {}, createdThread.user, user);
                               createdThread.ui.state = state.PANEL_STATE.COLLAPSED;
 
@@ -712,12 +747,12 @@ $.extend(state, {
                               
                               this._insertMessage(createdThread, {type: type,
                                                         from: from,
-                                                        time: this._now(),
-                                                        timestamp: this._now(true),
+                                                        time: time,
+                                                        timestamp: timestamp,
                                                         content: message});
                           }
 
-                          if (state.ui.pendingThreads.indexOf(threadId) === -1) {
+                          if (state.ui.pendingThreads.indexOf(threadId) === -1 && parameters.newMsg) {
                               state.ui.pendingThreads.push(threadId);
 
                               stateChange.report = 'recievedThread';
@@ -963,6 +998,13 @@ $.extend(state, {
             // ???????
             return threads[0];
         },
+        _getThreadById: function(threadId) {
+
+            var threads = $.grep(state.threads, function(e, i) {
+                return e.id === threadId;
+            });
+            return threads[0];
+        },        
         _getThreadByJid: function(jid) {
             var threads = $.grep(state.threads, function(e, i) {         
                 return e.user.jid === jid;
