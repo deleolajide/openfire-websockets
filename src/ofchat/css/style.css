@@ -83,7 +83,7 @@ div#gtalklet_layer {
 }
 
 #gtalklet_layer .gtalklet_panel.gtalklet_thread  {
-    width: 200px;
+    width: 250px;
 }
 
 #gtalklet_layer .gtalklet_panel.minimized .gtalklet_panel_content {
@@ -93,6 +93,7 @@ div#gtalklet_layer {
 #gtalklet_layer .gtalklet_panel.collapsed {
     display: none;
 }
+
 
 #gtalklet_layer .gtalklet_title_bar {
     cursor: pointer;
@@ -127,7 +128,7 @@ div#gtalklet_layer {
 
 #gtalklet_layer .gtalklet_thread .gtalklet_title_bar .gtalklet_contact_name {
     display: inline-block;
-    width: 142px;
+    width: 192px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -161,8 +162,9 @@ div#gtalklet_layer {
 
 /* avatar */
 
-#gtalklet_layer .gtalklet_avatar {
+#gtalklet_layer .gtalklet_avatar img {
     height: 32px;
+    width: 32px;    
     float: left;
     display: inline-block; 
     overflow: hidden;   
@@ -271,7 +273,7 @@ div#gtalklet_layer {
 /* message timeline */
 #gtalklet_layer .gtalklet_timeline {
     min-height: 140px;
-    max-height: 200px;
+    max-height: 300px;  /* 598px is same as roster */
     padding-bottom: 18px;
     margin-bottom: 2px;
     overflow-x: hidden;
@@ -349,7 +351,7 @@ div#gtalklet_layer {
 #gtalklet_layer .gtalklet_chat_form textarea {
     position: relative;    
     padding: 1px;
-    width: 158px;
+    width: 208px;
     height: 34px;
     border: 1px solid darkGray;
     background: #EEEEEE;
@@ -427,7 +429,7 @@ div#gtalklet_layer {
 
 #gtalklet_layer #gtalklet_filter_panel {
     display: inline-block;
-    width: 200px;
+    width: 250px;
 }
 
 #gtalklet_layer #gtalklet_filter_panel.collapsed {
@@ -438,7 +440,7 @@ div#gtalklet_layer {
     color: white;
     background: #2C3342;
     padding: 3px 30px 3px 20px;
-    width: 150px;
+    width: 200px;
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAABRklEQVQ4EWP8//8/AyWAiRLNIL0UG8CCzQVTpkwpU1RUjGVhYWF7+PDh5ufPn1fU19f/waaWARQGyHjVqlUH//379//q1atfz5079+HXr1//d+/efa+hoYEHWR2MjaJ5woQJ6UCJ/4sWLVoFUzBp0qRikCFz586dAxNDplEMWLNmzdHHjx//RlYAYh86dOjp0aNHX6CLg/gYgcjIyMjQ2NiILs4IUowNoCh88uTJImlpaRZlZeW1MEOmTp1abmJiInnjxo0N2AxA8QLIFlAgAun/QA3fL168+Onv378gLigg7wIDUgzIRNGD1WmwaGRmZmZ79OjRNikpKScfHx+9Y8eOvdy/f795dXX1Q7hr0E3ExQcG8BGg3P9169YdR1aDNSHBTUdiBAcH28yaNav/69evl5CEGbB6AVkBITZKLBBSjE2eYgMAxokwf3SEZT0AAAAASUVORK5CYII%3D);
     background-repeat: no-repeat;
     background-position: 4px 50%;
@@ -465,9 +467,18 @@ div#gtalklet_layer {
     color: crimson;
 }
 
+#gtalklet_layer .gtalklet_contact_gateway {
+    margin-left: 180px;
+    white-space: nowrap;
+    overflow: hidden; 
+    display: inline;  
+    float: right;    
+}
+
+
 #gtalklet_layer #gtalklet_filter_panel .gtalklet_contacts {
     min-height: 18px;
-    max-height: 692px; /* 44*n + 30*/
+    max-height: 646px; /* 44*n + 30*/
     overflow: auto;
 }
 

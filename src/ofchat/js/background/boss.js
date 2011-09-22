@@ -51,11 +51,11 @@ _initVersion = function() {
             // onInstall
             // ??????
             options('BOSH_SERVICE', 'https://localhost:7070');
-            options('GOOGLE_APPS_ACCOUNT', true); 
             options('AUTO_SIGN_IN', true); 
             options('USE_WEBSOCKETS', false);
             options('ALIGN', 'right'); 
-            options('DESKTOP_NOTIFICATION', true); 
+            options('HISTORY_THREADS', '2'); 
+            options('DESKTOP_NOTIFICATION', true);             
             options('AUTO_IDLE', true); 
             options('EXCLUDES', 'http*://mail.google.com/*\nhttp*://plus.google.com/*\nhttp*://www.facebook.com/*');
     
@@ -75,6 +75,7 @@ _processOption = function(key, value) {
             BOSH_SERVICE: true,
             CUSTOM_BOSH_SERVICE: true,
             ALIGN: true,
+            HISTORY_THREADS: 2,
             EXCLUDES: true
         };
     } else {
@@ -85,21 +86,23 @@ _processOption = function(key, value) {
         options('ALIGN', options('ALIGN'));
     }
 
-    if (updated.GOOGLE_APPS_ACCOUNT) {
-        options('GOOGLE_APPS_ACCOUNT', options('GOOGLE_APPS_ACCOUNT'));
+    if (updated.HISTORY_THREADS) {
+        options('HISTORY_THREADS', options('HISTORY_THREADS'));
     }
-
+    
     if (updated.EXCLUDES) {
         var urls = options('EXCLUDES').split('\n');
         // ????????
         urls.push('http*://chrome.google.com/webstore*','chrome-*', 'chrome://extensions/*');
+        
         for (index in urls) {
             urls[index] = $.convert2RegExp(urls[index]);
         }
         excludedUrls = urls;
     }
 
-    if (updated.CUSTOM_BOSH_SERVICE) {
+    if (updated.CUSTOM_BOSH_SERVICE) 
+    {
         if (options('CUSTOM_BOSH_SERVICE')) {
             options('BOSH_SERVICE', options('CUSTOM_BOSH_SERVICE'));
         } else {
@@ -107,8 +110,10 @@ _processOption = function(key, value) {
         }
     }
 
-    if (updated.BOSH_SERVICE || updated.CUSTOM_BOSH_SERVICE || updated.JID || updated.PASSWORD) {
-        if (options('BOSH_SERVICE') && options('JID') && options('PASSWORD')) {
+    if (updated.BOSH_SERVICE || updated.CUSTOM_BOSH_SERVICE || updated.JID || updated.PASSWORD) 
+    {
+        if (options('BOSH_SERVICE') && options('JID') && options('PASSWORD')) 
+        {
             options('CONNECTION_PREPARED', true);
         } else {
             options('CONNECTION_PREPARED', false);

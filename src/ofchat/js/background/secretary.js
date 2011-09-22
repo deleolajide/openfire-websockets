@@ -50,6 +50,7 @@ secretary.reset = function() {
 };
 
 secretary.signin = function() {
+
     var service = boss.options('BOSH_SERVICE');
     var jid = boss.options('JID');
     var password = boss.options('PASSWORD');
@@ -223,7 +224,8 @@ var features = {
             this._connection = connection;
 
 	    console.log("registering..xmpp");	
-		
+	    console.log("History " + boss.options('HISTORY_THREADS'));
+
 	    Strophe.addNamespace('PRIVATE', 'jabber:iq:private');
 	    Strophe.addNamespace('BOOKMARKS', 'storage:bookmarks');
 	    Strophe.addNamespace('PRIVACY', 'jabber:iq:privacy');
@@ -261,22 +263,86 @@ var features = {
             var message = parameters.message;
 
 	    var threads = $.grep(state.threads, function(e, i) {return e.id === threadId});
-            var thread = threads[0];
-            
-            if (!thread.chatType) thread.chatType = "chat";
-            
-            if (thread.chatType == "chat") 
-            	var to = features['xmpp']._toFullJid[parameters.jid]; // || parameters.jid;
-            else
-            	var to = parameters.jid;
-            
-            var iq = $msg({to: to, type: thread.chatType}).c('body').t(message);
+	    var thread = threads[0];
 
-            this._connection.send(iq);
+            
+            if (message[0] == "/") 
+            {           
+            	features['xmpp']._handleCommand(message.substring(1), threadId, thread.chatType, parameters.jid);
+            
+            } else {
+		    if (!thread.chatType) thread.chatType = "chat";
+
+		    if (thread.chatType == "chat") 
+			var to = features['xmpp']._toFullJid[parameters.jid]; // || parameters.jid;
+		    else
+			var to = parameters.jid;
+
+		    var iq = $msg({to: to, type: thread.chatType}).c('body').t(message);
+
+		    this._connection.send(iq);
+	    }
         },
+        
+        _handleCommand: function(command, threadId, chatType, jid) {
+
+	    var parameters = command.split(" ");
+	    
+            switch(parameters[0]) 
+            {
+            case '?':	// help
+
+		features['xmpp']._outputCommand("/. (slah dot) list chat participants", threadId);
+                break;
+                
+            case '.':	// list participants in a room
+
+		features['xmpp']._outputCommand(":| Chat Participants", threadId);	// reply header plain emoticon
+            
+            	if (chatType && chatType == "groupchat")
+            	{
+		    var iq = $iq({type: 'get', to: jid}).c('query', {xmlns: 'http://jabber.org/protocol/disco#items'});
+
+		    this._connection.sendIQ(iq, function(response)
+		    {
+			var $response = $(response);
+			
+			$('item', response).each(function() 
+			{
+				var participant = Strophe.getResourceFromJid($(this).attr('jid'));
+				features['xmpp']._outputCommand(participant, threadId);
+			});
+			
+			features['xmpp']._outputCommand(" ", threadId);			
+		    });
+
+            	
+            	} else {
+            	
+            		features['xmpp']._outputCommand(Strophe.getNodeFromJid(jid), threadId);          		            		
+            	}
+		
+                break;
+                
+            default: 
+                break;
+            }      	
+        }, 
+
+        _outputCommand: function(messageText, threadId) {
+
+            var from = state.user.jid;        	
+            var time = features['xmpp']._now();
+            var timestamp = features['xmpp']._now(true);  
+                    
+            boss.report('recieved', {from: from, threadId: threadId, type: "chat", message: messageText, 
+                                     jid: state.user.jid, time: time, timestamp: timestamp, newMsg: true});                
+	},
+	
         _changePresence: function(parameters) {
             var show = '';
             var status = '';
+            
             if (parameters) {
                 show = parameters.show;
                 status = parameters.status;
@@ -347,7 +413,7 @@ var features = {
         _loadMessages: function(jid, callback) {
             // http://xmpp.org/extensions/xep-0136.html - archiving
             
-            var historyChats = 2;            
+            var historyChats = boss.options('HISTORY_THREADS') || 2;            
             var resultUser = {};
             var iq = $iq({type: 'get'}).c('list', {xmlns: 'urn:xmpp:archive', 'with': jid}); //.c('set', {xmlns: 'http://jabber.org/protocol/rsm'}).c('max').t('2');
 
@@ -431,11 +497,18 @@ var features = {
                 boss.report('loadContacts', {contacts: contacts});
 
                 for (index in contacts) 
-                {              
+                {  
+                    console.log("_loadContacts - _loadUser " + contacts[index].jid)
+
                     self._loadUser(contacts[index].jid, function(response) {
                         boss.report('loadUser', response);
-                    });
+                    });                 
+                }
 
+                for (index in contacts) 
+                {  
+                    console.log("_loadContacts - _loadMessages " + contacts[index].jid)
+                
                     self._loadMessages(contacts[index].jid, function(response) {
                   
                   	if (response.direction == "from")
@@ -443,7 +516,7 @@ var features = {
                         else
 				boss.report('send', response);                        
                     }); 
-                   
+                  
                 }
                 
                 boss.log('Signed In');
@@ -555,9 +628,10 @@ var features = {
         },
         _presenceCallback: function(presence) {
             $presence = $(presence);
-
             var from = Strophe.getBareJidFromJid($presence.attr('from')).toLowerCase();
             var show = 'chat', status = '';
+
+	    console.log("_presenceCallback 1 " + $presence.attr('from'))
 
             var type = $presence.attr('type');
             switch (type) {
@@ -640,7 +714,7 @@ var features = {
                         
                     }
             }
-            
+        
             return true;
         }
     },

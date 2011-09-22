@@ -80,6 +80,10 @@ window.addEvent("domready", function () {
             background.boss.optionUpdated("ALIGN", settings.manifest.align.get());
         });
 
+        settings.manifest.history_threads.addEvent("action", function() {
+            background.boss.optionUpdated("HISTORY_THREADS", settings.manifest.history_threads.get());
+        });
+        
         settings.manifest.signout.addEvent("action", function() {
             background.boss.signout();
             toggleProtection();

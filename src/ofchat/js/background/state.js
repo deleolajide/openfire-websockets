@@ -320,7 +320,7 @@ $.extend(state, {
                                  {
 				      if (e.presence.type.toLowerCase() != "unavailable") 
 				      {				      	
-				      	if (matchedContactsSum < 15)
+				      	if (matchedContactsSum < 14)
 				      	{
 				      		matchedContactsSum++;				      	
 				      		matchedContacts.unshift(e);
@@ -336,7 +336,7 @@ $.extend(state, {
 
 				      var match = jid.indexOf(segment);
 
-				      if (match > -1 && matchedContactsSum++ < 15) 
+				      if (match > -1 && matchedContactsSum++ < 14) 
 				      {
 					  matchedContacts.unshift(e);
 					  
@@ -344,7 +344,7 @@ $.extend(state, {
 				      
 					  match = name.indexOf(segment);
 					  
-					  if (match > -1 && matchedContactsSum++ < 15) {
+					  if (match > -1 && matchedContactsSum++ < 14) {
 					      matchedContacts.unshift(e);
 					  }
 				      }
@@ -536,10 +536,12 @@ $.extend(state, {
                       // no returns
                       var jid = parameters.jid;
 
-                      if (parameters.name && parameters.name != "") {
-                          state.user.contacts[jid].name = parameters.name;
+                      if (parameters.name && parameters.name != "") 
+                      {
+                      	  state.user.contacts[jid].name = parameters.name;
                       }
-                      state.user.contacts[jid].avatar = parameters.avatar;
+                      state.user.contacts[jid].avatar = parameters.avatar;                      
+                      
                       break;
                   case 'toggleConsole':
                   
@@ -613,9 +615,15 @@ $.extend(state, {
                       //parameters.message
                       // parameters.timestamp
                       // parameters.time   
-                     
+
+            
                       threadId = parameters.threadId;
                       var message = parameters.message;
+
+            	      if (message[0] == "/") // don't echo commands
+            	      {
+            	      	break;
+            	      }
                       
                       thread = this._getThreadById(threadId);
                       // encode html tag
@@ -911,6 +919,7 @@ $.extend(state, {
                                   message: state.PRESENCE_MESSAGE[state.PRESENCE_TYPE.REJECTED]
                               };
                           } else if (typeof(contacts[index].presence) === 'undefined') {
+				
 				if (!state.user.contacts[contacts[index].jid])
 				{    
 				        contacts[index].presence = { type: state.PRESENCE_TYPE.UNAVAILABLE, 
@@ -929,6 +938,8 @@ $.extend(state, {
                           
                           if (!contacts[index].avatar)
                           	contacts[index].avatar = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAgACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD26p7K0ub2byrWF5X77RwPcntUFeg+CYok0CJozkyMzP8A72cfyAoA4vUdLv8ATz/pVuyr2ccr+YqlXquowQXFlLDcKDEyHdn09a8qFAB7V3/hDS7vTrVjczACXDCED7pwOp9exHtXOeCbbz9cSQ42wIXOfXoP55/CvQaAM/xBZXF/pkltbziJnxnI4YZ6E9hXm1xDLbzvBMhSRDhga9Zrj/iFaAG3vgef9Uw/Mj+tAH//2Q==';
+                          	
+                          contacts[index].gateway = this._applyGWFilter(contacts[index].jid);
                       }
                       
                       state.user.contacts = $.extend(state.user.contacts, parameters.contacts);
@@ -1029,7 +1040,19 @@ $.extend(state, {
                 return true;
             }
         },
-        
+
+	_applyGWFilter: function (jid) 
+	{
+		if (jid.indexOf("@aim.") > -1) return "<img src='" + chrome.extension.getURL("images/gateways/aim.gif") + "' border='0'>";
+		if (jid.indexOf("@msn.") > -1) return "<img src='" + chrome.extension.getURL("images/gateways/msn.gif") + "' border='0'>";
+		if (jid.indexOf("@xmpp.") > -1) return "<img src='" + chrome.extension.getURL("images/gateways/xmpp.png") + "' border='0'>";
+		if (jid.indexOf("@yahoo.") > -1) return "<img src='" + chrome.extension.getURL("images/gateways/yahoo.gif") + "' border='0'>";
+		if (jid.indexOf("@gtalk.") > -1) return "<img src='" + chrome.extension.getURL("images/gateways/gtalk.gif") + "' border='0'>";
+		if (jid.indexOf("@facebook.") > -1) return "<img src='" + chrome.extension.getURL("images/gateways/facebook.png") + "' border='0'>";
+		
+		return "";
+	},
+	
 	_applyFilters: function (body) 
 	{
 		//body = body.replace(/&/gi, "&amp;");

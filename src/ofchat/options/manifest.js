@@ -119,6 +119,23 @@ this.manifest = {
                      This will disable OfChat on Gmail. <br />\
                      Enter one URL per line."
         },
+        {        
+            "tab": "Advanced",
+            "group": "History",
+            "name": "history_threads",
+            "id": "history_threads",
+            "type": "text",
+            "text": "2",
+            "masked": false
+        },
+        {
+            "tab": "Advanced",
+            "group": "History",
+            "name": "",
+            "type": "description",
+            "text": "Enter the number of archived conversions to show as conversation history. You need to install OpenArchive plugin ver 1.0.5+"
+        }, 
+        
         {
             "tab": "About",
             "group": "OfChat",
