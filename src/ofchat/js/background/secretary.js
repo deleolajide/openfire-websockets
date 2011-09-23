@@ -335,8 +335,7 @@ var features = {
             var time = features['xmpp']._now();
             var timestamp = features['xmpp']._now(true);  
                     
-            boss.report('recieved', {from: from, threadId: threadId, type: "chat", message: messageText, 
-                                     jid: state.user.jid, time: time, timestamp: timestamp, newMsg: true});                
+            boss.report('recieved', {from: from, html: true, threadId: threadId, type: "chat", message: "<font color='blue'>" + messageText + "</font>", jid: state.user.jid, time: time, timestamp: timestamp, newMsg: true});                
 	},
 	
         _changePresence: function(parameters) {
@@ -638,12 +637,13 @@ var features = {
                 case 'subscribe':
                     // ?????????
                     var threadId = $.md5(from.toLowerCase()); // getThreadId;
+            	    var time = features['xmpp']._now();
+            	    var timestamp = features['xmpp']._now(true);                    
                     var type = 'invite'; //?
                     var messageText = from + ' wants to add you as a friend. Add as a friend? <a class="gtalklet_message_link gtalklet_invited_ok" href="javascript:" data-jid="' + from + '" title="Accept">Yes</a> | <a class="gtalklet_message_link gtalklet_invited_no" href="javascript:" data-jid=' + from + ' title="Reject">No</a>'; //?
 
-                    boss.report('recieved', {from: from, threadId: threadId, type: type, message: messageText, html: true});
+                    boss.report('recieved', {from: from, threadId: threadId, type: type, message: messageText, html: true, jid: $presence.attr('from'), time: time, timestamp: timestamp, newMsg: true});
                     boss.report('disableThread', {threadId: threadId});
-                    break;
                 case 'subscribed':
                     // ???????????
                     var jid = from;
@@ -708,9 +708,21 @@ var features = {
 			    contacts[jid] = {jid: jid, name: name, invited: false, rejected: false, presence: presence};
 			    boss.report('loadContacts', {contacts: contacts});				    
 			
-			} else 
-				boss.report('presence', {from: from, show: show, status: status});
-                        
+			} else {
+			
+			      var threadOfJid = state._getThreadByJid(from);
+
+			      if (threadOfJid && threadOfJid.chatType == "groupchat")
+			      {
+				if (show == "chat" || show == "unavailable")
+				{		    
+					var msg = (show == "chat") ? " has joined this conversation" : " has left this conversation";			      		
+					features['xmpp']._outputCommand(Strophe.getResourceFromJid($presence.attr('from')) + msg, threadOfJid.id);		   		      		
+				}
+
+			      } else boss.report('presence', {from: from, show: show, status: status, jid: $presence.attr('from')});
+
+                        }
                         
                     }
             }

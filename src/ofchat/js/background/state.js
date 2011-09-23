@@ -690,9 +690,16 @@ $.extend(state, {
                       var from = parameters.from;
                       var type = state.MESSAGE_TYPE[parameters.type.toUpperCase()];
                       
-                      message = $('<div />').text(parameters.message).html();
-		      message = this._applyFilters(message);
-		      
+                      if (!parameters.html)
+                      {
+                      	var message = this._applyFilters($('<div />').text(parameters.message).html());
+                      	
+                      } else {
+                      
+                      	var message = parameters.message;
+                      }
+                      
+                      
 		      if (parameters.type == "groupchat")
 		      {
 				var mucNick = Strophe.getResourceFromJid(parameters.jid);
@@ -738,12 +745,25 @@ $.extend(state, {
                               // copy object
                               var createdThread = $.extend(true, {}, this._getThread('prototype'));
 
-                              var user = {
-                                  jid: from,
-                                  avatar: state.user.contacts[from].avatar,
-                                  name: state.user.contacts[from] ? state.user.contacts[from].name : from,
-                                  presence: state.user.contacts[from] ? state.user.contacts[from].presence : {type: '', message: ''}
-                              };
+			      if (type == "invite")
+			      {
+
+				      var user = {
+					  jid: from,
+					  avatar: 'data:image/jpeg;base64,',
+					  name: from,
+					  presence: {type: 'unavailable', message: ''}
+				      };
+			      
+			      } else {
+			      
+				      var user = {
+					  jid: from,
+					  avatar: state.user.contacts[from].avatar,
+					  name: state.user.contacts[from] ? state.user.contacts[from].name : from,
+					  presence: state.user.contacts[from] ? state.user.contacts[from].presence : {type: '', message: ''}
+				      };
+			      }
                               createdThread.id = threadId;
                               createdThread.chatType = parameters.type;
                               createdThread.user = $.extend(true, {}, createdThread.user, user);
@@ -1040,7 +1060,7 @@ $.extend(state, {
                 return true;
             }
         },
-
+	
 	_applyGWFilter: function (jid) 
 	{
 		if (jid.indexOf("@aim.") > -1) return "<img src='" + chrome.extension.getURL("images/gateways/aim.gif") + "' border='0'>";

@@ -615,6 +615,38 @@ Openfire.Connection.prototype = {
         
     },
 
+    /** PrivateFunction: _onDisconnectTimeout
+     *  _Private_ timeout handler for handling non-graceful disconnection.
+     *
+     *  If the graceful disconnect process does not complete within the
+     *  time allotted, this handler finishes the disconnect anyway.
+     *
+     *  Returns:
+     *    false to remove the handler.
+     */
+     
+    _onDisconnectTimeout: function ()
+    {
+        Strophe.info("_onDisconnectTimeout was called");
+        
+        this._doDisconnect();
+
+        return false;
+    },
+
+    /** PrivateFunction: _doDisconnect
+     *  _Private_ function to disconnect.
+     *
+     *  This is the last piece of the disconnection logic.  This resets the
+     *  connection and alerts the user's connection callback.
+     */
+     
+    _doDisconnect: function ()
+    {
+        Strophe.info("_doDisconnect was called");
+	this._onclose();
+    },
+    
     /** PrivateFunction: _changeConnectStatus
      *  _Private_ helper function that makes sure plugins and the user's
      *  callback are notified of connection status changes.
@@ -624,7 +656,7 @@ Openfire.Connection.prototype = {
      *      in Strophe.Status
      *    (String) condition - the error condition or null
      */
-     
+
     _changeConnectStatus: function (status, condition)
     {
         // notify all plugins listening for status changes
