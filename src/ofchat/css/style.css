@@ -1,3 +1,4 @@
+	
 /*Complete Style Reset*/
 #gtalklet_layer, #gtalklet_layer [class^=gtalklet] {
     background: transparent;
@@ -128,7 +129,7 @@ div#gtalklet_layer {
 
 #gtalklet_layer .gtalklet_thread .gtalklet_title_bar .gtalklet_contact_name {
     display: inline-block;
-    width: 192px;
+    width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -146,8 +147,22 @@ div#gtalklet_layer {
 
 #gtalklet_layer .gtalklet_title_bar .gtalklet_close_thread:hover {
     opacity: 1;
-    /*background: gray;*/
 }
+
+#gtalklet_layer .gtalklet_title_bar .gtalklet_open_video {
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAFlJREFUeNpi/P//PwM1ARMDlcHgN5BlyZIlZAViTEwMI7oYyCyquRDmMCZqGkYVA9GDjIVaBo3gdEi2gaB0iC0tUuxCdEOp4mVkQ6kWhjBDGUfLQ4oBQIABAB7OHiXblrvyAAAAAElFTkSuQmCC) no-repeat 50% 50%;
+    opacity: 0.8;
+    display: inline-block;
+    height: 18px;
+    width: 16px;
+    margin-left: 8px;
+    vertical-align: bottom;
+}
+
+#gtalklet_layer .gtalklet_title_bar .gtalklet_open_video:hover {
+    opacity: 1;
+}
+
 
 /* console */
 /* presence */

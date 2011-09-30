@@ -5,7 +5,7 @@ gtalklet._context = null;
 
 gtalklet.$ = function(selector, context) {
     if (typeof(selector) === 'string') {
-        // 默认给没指定元素名的选择器 制定元素div
+        // ????????????? ????div
         var regex = /^\.| \./;
         var replace = ' div.';
         selector = selector.replace(regex, replace);
@@ -23,6 +23,6 @@ gtalklet.$ = function(selector, context) {
 
 gtalklet._$.extend(gtalklet.$, gtalklet._$);
 
-// 初始化
+// ???
 assistant.init(gtalklet.$);
 follower.init(gtalklet.$);

@@ -81,6 +81,7 @@ var _template = [
                        '<div class="gtalklet_contact_name" title="<%=threads[i].user.jid%>">',
                            '<%=threads[i].user.name%>',
                        '</div>',
+                       '<div class="gtalklet_open_video"></div>',                       
                        '<div class="gtalklet_close_thread"></div>',
                    '</div>',
                    '<div class="gtalklet_panel_content_wrapper">',
@@ -127,7 +128,7 @@ var _template = [
                     '<div class="gtalklet_jump_list <%=ui.console.state %>" data-switch-class="<%=ui.console.state%>">',
                         '<div class="gtalklet_jump_list_item gtalklet_icon_button gtalklet_options"></div>',
                         '<% for(i in ui.console.commands) { %>',
-                            '<div class="gtalklet_jump_list_item gtalklet_icon_button gtalklet_presence <%=ui.console.commands[i].classes%>" xtitle="<%=ui.console.commands[i].title%>" data-presence="<%=ui.console.commands[i].classes%>"></div>',
+                            '<div class="gtalklet_jump_list_item gtalklet_icon_button gtalklet_presence <%=ui.console.commands[i].classes%>" title="<%=ui.console.commands[i].title%>" data-presence="<%=ui.console.commands[i].classes%>"></div>',
                         '<% } %>',
                     '</div>',
                 '</div>',
@@ -170,7 +171,8 @@ var $ = null,
 
         thread: '.gtalklet_thread',
         titleBar : '.gtalklet_thread .gtalklet_title_bar',
-        close: '.gtalklet_close_thread',
+        openVideo: '.gtalklet_open_video',
+        close: '.gtalklet_close_thread',        
         timeline : '.gtalklet_timeline',
         chatForm : '.gtalklet_chat_form',
         chatTextarea : 'form.gtalklet_chat_form textarea[name=gtalklet_chat]',
@@ -376,11 +378,20 @@ action = {
 
         run: function() {
             var base = this;
+/*            
             if (confirm('Sign out?')) {
                 follower.report('signout', {}, function(stateChange) {
                     base.callback(stateChange.returns);
                 });
             }
+*/
+
+	    Boxy.confirm("Sign out?", function() 
+	    {
+                follower.report('signout', {}, function(stateChange) {
+                    base.callback(stateChange.returns);
+                });
+	    });
         },
         delegate: function() {
             var base = this;
@@ -781,6 +792,33 @@ action = {
             $thread.remove();
         }
     },
+    
+    openVideo: {
+        selector: selectors.openVideo,
+        event: 'click',
+
+        run: function(threadId) {
+            threadId = threadId || '';
+            var base = this;
+            follower.report('openVideo', {threadId: threadId}, function(stateChange) {
+                base.callback(stateChange.returns);
+            });
+        },
+        delegate: function() {
+            var base = this;
+            $layer.delegate(this.selector, this.event, function(event) {
+                var threadId = $(this).closest(selectors.thread).attr('data-thread-id');
+                base.run(threadId);
+                event.stopPropagation();
+            });
+        },
+        callback: function(returns) {
+            // returns.threadId
+            var threadId = returns.threadId;
+
+        }
+    },
+    
     // 
     createPanel: {
         run: function(thread, collapseFilterPanel) {

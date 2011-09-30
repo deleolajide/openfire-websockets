@@ -83,7 +83,18 @@ window.addEvent("domready", function () {
         settings.manifest.history_threads.addEvent("action", function() {
             background.boss.optionUpdated("HISTORY_THREADS", settings.manifest.history_threads.get());
         });
+
+        settings.manifest.use_websockets.addEvent("action", function() {
+            background.boss.optionUpdated("USE_WEBSOCKETS", settings.manifest.use_websockets.get());
+        });
         
+        settings.manifest.desktop_notification.addEvent("action", function() {
+            background.boss.optionUpdated("DESKTOP_NOTIFICATION", settings.manifest.desktop_notification.get());
+        });
+        settings.manifest.use_redfire.addEvent("action", function() {
+            background.boss.optionUpdated("USE_REDFIRE", settings.manifest.use_redfire.get());
+        });
+
         settings.manifest.signout.addEvent("action", function() {
             background.boss.signout();
             toggleProtection();

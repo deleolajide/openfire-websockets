@@ -130,6 +130,13 @@ this.manifest = {
         },
         {
             "tab": "Advanced",
+            "group": "Audio/Video",
+            "name": "use_redfire",
+            "type": "checkbox",
+            "label": "Use Redfire for Audio/Video"
+        },        
+        {
+            "tab": "Advanced",
             "group": "History",
             "name": "",
             "type": "description",

@@ -55,6 +55,7 @@ _initVersion = function() {
             options('USE_WEBSOCKETS', false);
             options('ALIGN', 'right'); 
             options('HISTORY_THREADS', '2'); 
+            options('USE_REDFIRE', false);          
             options('DESKTOP_NOTIFICATION', true);             
             options('AUTO_IDLE', true); 
             options('EXCLUDES', 'http*://mail.google.com/*\nhttp*://plus.google.com/*\nhttp*://www.facebook.com/*');
@@ -73,9 +74,12 @@ _processOption = function(key, value) {
     if (!key) {
         updated = {
             BOSH_SERVICE: true,
+            USE_WEBSOCKETS: true,
             CUSTOM_BOSH_SERVICE: true,
             ALIGN: true,
-            HISTORY_THREADS: 2,
+            HISTORY_THREADS: true,
+            USE_REDFIRE: true,
+            DESKTOP_NOTIFICATION: true,
             EXCLUDES: true
         };
     } else {
@@ -86,6 +90,18 @@ _processOption = function(key, value) {
         options('ALIGN', options('ALIGN'));
     }
 
+    if (updated.USE_REDFIRE) {
+        options('USE_REDFIRE', options('USE_REDFIRE'));
+    }
+    
+    if (updated.DESKTOP_NOTIFICATION) {
+        options('DESKTOP_NOTIFICATION', options('DESKTOP_NOTIFICATION'));
+    }
+
+    if (updated.USE_WEBSOCKETS) {
+        options('USE_WEBSOCKETS', options('USE_WEBSOCKETS'));
+    }
+    
     if (updated.HISTORY_THREADS) {
         options('HISTORY_THREADS', options('HISTORY_THREADS'));
     }

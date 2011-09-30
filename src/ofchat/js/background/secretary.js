@@ -55,7 +55,7 @@ secretary.signin = function() {
     var jid = boss.options('JID');
     var password = boss.options('PASSWORD');
 
-	this._connect(service, jid, password);
+    this._connect(service, jid, password);
 };
 
 secretary.signout = function() {
@@ -224,7 +224,7 @@ var features = {
             this._connection = connection;
 
 	    console.log("registering..xmpp");	
-	    console.log("History " + boss.options('HISTORY_THREADS'));
+	    console.log("History threads = " + boss.options('HISTORY_THREADS'));
 
 	    Strophe.addNamespace('PRIVATE', 'jabber:iq:private');
 	    Strophe.addNamespace('BOOKMARKS', 'storage:bookmarks');
@@ -297,7 +297,7 @@ var features = {
                 
             case '.':	// list participants in a room
 
-		features['xmpp']._outputCommand(":| Chat Participants", threadId);	// reply header plain emoticon
+		features['xmpp']._outputCommand("Chat Participants", threadId);	// reply header plain emoticon
             
             	if (chatType && chatType == "groupchat")
             	{
@@ -319,7 +319,7 @@ var features = {
             	
             	} else {
             	
-            		features['xmpp']._outputCommand(Strophe.getNodeFromJid(jid), threadId);          		            		
+            		features['xmpp']._outputCommand(Strophe.getNodeFromJid(jid), threadId);            		
             	}
 		
                 break;
@@ -337,7 +337,15 @@ var features = {
                     
             boss.report('recieved', {from: from, html: true, threadId: threadId, type: "chat", message: "<font color='blue'>" + messageText + "</font>", jid: state.user.jid, time: time, timestamp: timestamp, newMsg: true});                
 	},
-	
+
+        _openWindow: function(width, height, url, title) 
+        {
+		var content = '<iframe width=' + width + ' height=' + height + ' frameborder=0 src=' + url + ' /></iframe>';
+		var code = 'if (videoPanel != null) videoPanel.hide(); var videoPanel = new Boxy("' + content + '", {title: "' + title + '", show: true, draggable: true, unloadOnHide: true});';
+		chrome.tabs.executeScript(null, {code: code});        
+        
+        },
+        
         _changePresence: function(parameters) {
             var show = '';
             var status = '';
@@ -407,6 +415,9 @@ var features = {
                     callback(response);
                 }
             );
+            
+	    ms = new Date().getTime() + 100;	// hack to delay multiple vCard requests
+	    while (new Date() < ms){}        
         },
         
         _loadMessages: function(jid, callback) {
@@ -497,7 +508,7 @@ var features = {
 
                 for (index in contacts) 
                 {  
-                    console.log("_loadContacts - _loadUser " + contacts[index].jid)
+                    //console.log("_loadContacts - _loadUser " + contacts[index].jid)
 
                     self._loadUser(contacts[index].jid, function(response) {
                         boss.report('loadUser', response);
@@ -506,7 +517,7 @@ var features = {
 
                 for (index in contacts) 
                 {  
-                    console.log("_loadContacts - _loadMessages " + contacts[index].jid)
+                    //console.log("_loadContacts - _loadMessages " + contacts[index].jid)
                 
                     self._loadMessages(contacts[index].jid, function(response) {
                   
@@ -591,7 +602,8 @@ var features = {
             }
             
             var $invite = $message.find('invite');
-            
+            var videoInvite = $message.children('redfire-invite');
+
             if (false && $invite) 
             {
                 // group chat invitation
@@ -599,7 +611,24 @@ var features = {
             	var invitedFrom = Strophe.getBareJidFromJid($invite.attr('from')).toLowerCase();
                 var reason = $invite.find('reason').text();
                 boss.report('recievedGroupChatInvitation', {from: invitedFrom, chatroom: from, reason: reason});
-                
+
+	    } else if (type != "error" && videoInvite.length > 0) {
+	    	    
+		var prompt = $message.find('prompt').text();		
+		var nickname = $message.find("nickname").text();
+		var width = $message.find("width").text();
+		var height = $message.find("height").text();
+		var url = $message.find('body').text();		
+		var windowType = $message.find("windowType").text();
+		var roomType = $message.find("roomType").text();
+
+		var title = roomType == "chat" ? "Video call with " + nickname : "Video conference call in " + Strophe.getNodeFromJid(jid);
+		var content = '<iframe width=' + width + ' height=' + height + ' frameborder=0 src=' + url + ' /></iframe>';
+		var acceptCode = "if (videoPanel != null) videoPanel.hide(); var videoPanel = new Boxy('" + content + "', {title: '" + title + "', show: true, draggable: true, unloadOnHide: true});";
+		var confirmCode = "Boxy.confirm('" + nickname + prompt + "', function() {" +  acceptCode + " });"
+		chrome.tabs.executeScript(null, {code: confirmCode}); 
+					
+                        
             } else {
                 // normal chat message
                 
@@ -629,8 +658,6 @@ var features = {
             $presence = $(presence);
             var from = Strophe.getBareJidFromJid($presence.attr('from')).toLowerCase();
             var show = 'chat', status = '';
-
-	    console.log("_presenceCallback 1 " + $presence.attr('from'))
 
             var type = $presence.attr('type');
             switch (type) {

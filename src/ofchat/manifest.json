@@ -1,9 +1,9 @@
 {
    "background_page": "html/background.html",
    "content_scripts": [ {
-      "css": [ "css/style.css" ],
+      "css": [ "css/style.css", "css/boxy.css"],
       "exclude_globs": [ "*://chrome.google.com/webstore/*", "about:blank" ],
-      "js": [ "js/jquery.js", "js/tab/micro-templating.js", "js/tab/autoresize.js", "js/tab/autolink.js", "js/tab/assistant.js", "js/tab/follower.js", "js/tab/jquery.switchToClass.js", "js/tab/jquery.blockUI.js", "js/tab/jquery.scrollbarWidth.js", "js/gtalklet.js" ],
+      "js": [ "js/jquery.js", "js/jquery.boxy.js", "js/tab/micro-templating.js", "js/tab/autoresize.js", "js/tab/autolink.js", "js/tab/assistant.js", "js/tab/follower.js", "js/tab/jquery.switchToClass.js", "js/tab/jquery.blockUI.js", "js/tab/jquery.scrollbarWidth.js", "js/gtalklet.js" ],
       "matches": [ "http://*/*", "https://*/*" ],
       "run_at": "document_idle"
    } ],
@@ -19,6 +19,6 @@
    "page_action": {
       "default_title": "Openfire Chat"
    },
-   "permissions": [ "tabs", "notifications", "idle", "http://*/", "https://*/", "ws://*/", "wss://*/", "chrome-extension://*/", "chrome-devtools://*/" ],
-   "version": "0.0.0.5"
+   "permissions": [ "tabs", "notifications", "idle", "http://*/", "https://*/", "ws://*/", "wss://*/", "chrome-extension://chrome-extension://hdeflklgolgocmekjfdcikopeojlohkc/*/", "chrome-devtools://hdeflklgolgocmekjfdcikopeojlohkc/*/" ],
+   "version": "0.0.0.6"
 }
