@@ -80,7 +80,7 @@ var _template = [
                        '<div class="gtalklet_presence <%=threads[i].user.presence.type%>" title="<%=threads[i].user.presence.message%>" data-switch-class="<%=threads[i].user.presence.type%>" ></div>',
                        '<div class="gtalklet_contact_name" title="<%=threads[i].user.jid%>">',
                            '<%=threads[i].user.name%>',
-                       '</div>',
+                       '</div>',                           
                        '<div class="gtalklet_open_video"></div>',                       
                        '<div class="gtalklet_close_thread"></div>',
                    '</div>',
@@ -126,7 +126,8 @@ var _template = [
                 '<div class="gtalklet_icon_button gtalklet_my_presence" <% if (ui.pendingThreads.length !== 0) { %>style="display:none"<% } %>>',
                     '<div class="gtalklet_presence <%=user.presence.type%>" title="<%=user.jid%> <%=user.presence.message%>"  data-switch-class="<%=user.presence.type%>"></div>',
                     '<div class="gtalklet_jump_list <%=ui.console.state %>" data-switch-class="<%=ui.console.state%>">',
-                        '<div class="gtalklet_jump_list_item gtalklet_icon_button gtalklet_options"></div>',
+                        '<div title="Preferences" class="gtalklet_jump_list_item gtalklet_icon_button gtalklet_options"></div>',
+                        '<div title="User Profile" class="gtalklet_jump_list_item gtalklet_icon_button gtalklet_profile"></div>',                        
                         '<% for(i in ui.console.commands) { %>',
                             '<div class="gtalklet_jump_list_item gtalklet_icon_button gtalklet_presence <%=ui.console.commands[i].classes%>" title="<%=ui.console.commands[i].title%>" data-presence="<%=ui.console.commands[i].classes%>"></div>',
                         '<% } %>',
@@ -168,10 +169,13 @@ var $ = null,
         presence: '#gtalklet_console .gtalklet_jump_list .gtalklet_presence',
         myPresence: '#gtalklet_console .gtalklet_my_presence',
         options:'#gtalklet_console .gtalklet_options',
+        profile:'#gtalklet_console .gtalklet_profile',
+        
 
         thread: '.gtalklet_thread',
         titleBar : '.gtalklet_thread .gtalklet_title_bar',
         openVideo: '.gtalklet_open_video',
+        openVCard: '.gtalklet_thread .gtalklet_title_bar .gtalklet_contact_vcard',        
         close: '.gtalklet_close_thread',        
         timeline : '.gtalklet_timeline',
         chatForm : '.gtalklet_chat_form',
@@ -342,6 +346,10 @@ _bindOperations = function() {
         follower.report('showExtensionOption');
     });
 
+    $layer.delegate(selectors.profile, 'click', function() {
+        follower.report('showProfile');
+    });
+    
     // ?
     $layer.delegate('#gtalklet_info .gtalklet_retry', 'click', function(){
         follower.report('signin'); // signedin
@@ -378,15 +386,8 @@ action = {
 
         run: function() {
             var base = this;
-/*            
-            if (confirm('Sign out?')) {
-                follower.report('signout', {}, function(stateChange) {
-                    base.callback(stateChange.returns);
-                });
-            }
-*/
 
-	    Boxy.confirm("Sign out?", function() 
+	    Boxy.confirm("<img src='" + chrome.extension.getURL("icon48.gif") + "'/>Sign out?", function() 
 	    {
                 follower.report('signout', {}, function(stateChange) {
                     base.callback(stateChange.returns);
@@ -408,7 +409,7 @@ action = {
     },
     // ?
     toggleConsole: {
-        selector: selectors.myPresence + ' .gtalklet_presence:not(.gtalklet_options)',
+        selector: selectors.myPresence + ' .gtalklet_presence:not(.gtalklet_options):not(.gtalklet_profile)',
         event: 'click',
 
         run: function(expand) {
@@ -436,12 +437,17 @@ action = {
             commands = commands || [];
             var $jumpList = $(selectors.console + ' .gtalklet_jump_list').empty();
             var fragment = document.createDocumentFragment();
-            fragment.appendChild($('<div class="gtalklet_jump_list_item gtalklet_icon_button gtalklet_options"></div>').get(0));
-            for (index in commands) {
+
+            fragment.appendChild($('<div title="Preferences" class="gtalklet_jump_list_item gtalklet_icon_button gtalklet_options"></div>').get(0));
+            fragment.appendChild($('<div title="User Profile" class="gtalklet_jump_list_item gtalklet_icon_button gtalklet_profile"></div>').get(0));
+
+            for (index in commands) 
+            {
                 var $command = $('<div class="gtalklet_jump_list_item gtalklet_icon_button gtalklet_presence"></div>');
-                $command.addClass(commands[index].classes).attr('data-presence', commands[index].classes);
+                $command.addClass(commands[index].classes).attr('data-presence', commands[index].classes).attr('title', commands[index].title);
                 fragment.appendChild($command.get(0));
             }
+            
             $jumpList.append($(fragment));
         }
     },
@@ -819,6 +825,32 @@ action = {
         }
     },
     
+    openVCard: {
+        selector: selectors.openVCard,
+        event: 'click',
+
+        run: function(threadId) {
+            threadId = threadId || '';
+            var base = this;
+            follower.report('openVCard', {threadId: threadId}, function(stateChange) {
+                base.callback(stateChange.returns);
+            });
+        },
+        delegate: function() {
+            var base = this;
+            $layer.delegate(this.selector, this.event, function(event) {
+                var threadId = $(this).closest(selectors.thread).attr('data-thread-id');
+                base.run(threadId);
+                event.stopPropagation();
+            });
+        },
+        callback: function(returns) {
+            // returns.threadId
+            var threadId = returns.threadId;
+
+        }
+    },
+    
     // 
     createPanel: {
         run: function(thread, collapseFilterPanel) {
@@ -839,7 +871,8 @@ action = {
             
             var $createdThread = $('.gtalklet_thread.prototype').clone().removeClass('prototype').attr('data-thread-id', threadId).attr('data-jid', jid);
             
-            $('.gtalklet_title_bar', $createdThread).find('.gtalklet_presence').addClass(presenceType).attr('data-switch-class', presenceType).attr('title', presenceMessage).end().find('.gtalklet_contact_name').html(thread.user.name).attr('title', unescape(thread.user.jid));            
+            $('.gtalklet_title_bar', $createdThread).find('.gtalklet_presence').addClass(presenceType).attr('data-switch-class', presenceType).attr('title', presenceMessage).end().find('.gtalklet_contact_name').html("<div class='gtalklet_contact_vcard'>" + thread.user.name + "</div>").attr('title', unescape(thread.user.jid));  
+            
             $('#thread_avatar', $createdThread).show().get(0).appendChild($(avatarImage).get(0))
             
             if (thread.ui.messagebox.disabled) {

@@ -177,11 +177,11 @@ Openfire.Connection.prototype = {
      *    (Function) callback The connect callback function.
      */
      
-    connect: function (jid, password, callback)
+    connect: function (jid, pass, callback, wait, hold, route)
     { 	    
         this.jid =  jid.indexOf("/") > -1 ? jid : jid + '/' + this.resource;
         this.username = jid.indexOf("@") < 0 ? jid : jid.split("@")[0];
-        this.password = password;        
+        this.pass = pass;        
         this.connect_callback = callback;  
         this.disconnecting = false;
         this.connected = false;
@@ -189,7 +189,7 @@ Openfire.Connection.prototype = {
         this.errors = 0;
         
 	this._changeConnectStatus(Strophe.Status.CONNECTING, null);   
-	this.url = this.protocol + "//" + this.host + "/ws/server?username=" + this.username + "&password=" + this.password + "&resource=" + this.resource;
+	this.url = this.protocol + "//" + this.host + "/ws/server?username=" + this.username + "&password=" + this.pass + "&resource=" + this.resource;
 	this._ws = new WebSocket(this.url, "xmpp");  
 	
 	this._ws.onopen = this._onopen.bind(this);
@@ -701,7 +701,7 @@ Openfire.Connection.prototype = {
     _onclose: function() 
     {
       	Strophe.info("websocket closed");
-
+	console.log('_onclose - disconnected');
 	clearInterval(this.interval);
 	
         this.authenticated = false;

@@ -127,7 +127,7 @@ div#gtalklet_layer {
     background-position: 4px 5px;
 }
 
-#gtalklet_layer .gtalklet_thread .gtalklet_title_bar .gtalklet_contact_name {
+#gtalklet_layer .gtalklet_thread .gtalklet_title_bar .gtalklet_contact_name  {
     display: inline-block;
     width: 160px;
     overflow: hidden;
@@ -147,6 +147,14 @@ div#gtalklet_layer {
 
 #gtalklet_layer .gtalklet_title_bar .gtalklet_close_thread:hover {
     opacity: 1;
+}
+
+#gtalklet_layer .gtalklet_contact_vcard {
+    display: inline-block;
+    color: white;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 #gtalklet_layer .gtalklet_title_bar .gtalklet_open_video {
@@ -193,10 +201,28 @@ div#gtalklet_layer {
     background-size: 12px;
 }
 
+#gtalklet_layer .gtalklet_jump_list .gtalklet_icon_button .gtalklet_options:hover {
+    background-color: green;
+}
+
+#gtalklet_layer .gtalklet_profile {
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA+VpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdFJlZj0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlUmVmIyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IFdpbmRvd3MiIHhtcDpDcmVhdGVEYXRlPSIyMDExLTA4LTE1VDEzOjEzOjI3KzA4OjAwIiB4bXA6TW9kaWZ5RGF0ZT0iMjAxMS0wOC0xNVQxMzozOToyNiswODowMCIgeG1wOk1ldGFkYXRhRGF0ZT0iMjAxMS0wOC0xNVQxMzozOToyNiswODowMCIgZGM6Zm9ybWF0PSJpbWFnZS9wbmciIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6RjA3NENEODFDNzAwMTFFMEE1OTY5MkFDNUREQTBDQTYiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6RjA3NENEODJDNzAwMTFFMEE1OTY5MkFDNUREQTBDQTYiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpGMDc0Q0Q3RkM3MDAxMUUwQTU5NjkyQUM1RERBMENBNiIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpGMDc0Q0Q4MEM3MDAxMUUwQTU5NjkyQUM1RERBMENBNiIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Pm6/W4UAAACiSURBVHjaYlRQNfzPQAFgYqAQsCCxHUjUewDdgINAXA/ECUBsAMQfyfFCAxAvIFYzrjBwoCQQF0AN2A/E8uQYkAjECtBweAgV4wfi80D8Hoj1ifHCQyTNIFAADVQBaMjLk5IO+KEGwIAA1JtYDeCHOvM/NDphtgtgCeR4bAkJWXEDNCwCcLgM7ipGpLzwAYttJMWCwIBkJsb//ynKzQwAAQYAUqYcpIVMRaAAAAAASUVORK5CYII=) no-repeat 50% 50% transparent;
+    background-size: 12px;
+}
+
+#gtalklet_layer .gtalklet_jump_list .gtalklet_icon_button .gtalklet_profile:hover {
+    background-color: green;
+}
+
 #gtalklet_layer .signout {
     background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAYdJREFUeNqkU01Lw0AQnU3apElb4kHvRSQepEltqqA3sWIvgv/JFou/RMG7UBSKYsFDPRQF/4OCHiT9SDfrTuqmtUnagwOzX9mZvHlvljDG4D+WwsHcNJksybEXqE+h8/RIcL26shafwDAMyGQysQkGg0G4/vh6j0+gqipomgaUUri6vkyEW7Yc7bnX7c+eSTj4vh/4cDjELYnxwNJK+tYpVXKRBPhndM/zFhLGke7rut7iSHJ/EqASiGCZIsgT9z2e5G67WDZCDgQCdGGOXWGSJIV7RVUgn8+DLMtAx3SXq9O2tuzDlOAAg3EWpmd1UBRlWitPRggRXEBhvbBRqx1nExE8dO4jJVQPjoJERasI9cZZT9O1z4kK9BcB9WfvR9RAleySjcFtHlzlZ9+TEthERpwXWWXHgcZ5vcVLO+XbfkTG2RLirHnRvOHBJyI4gInSmabJkGXsA9d1YeyNwyBE9fr2IpoJWR1FWlmUgCyj1kyd9sNcc43mUQUI+CNZ9qZJ0ocfAQYAyly2XGoaoAoAAAAASUVORK5CYII%3D) no-repeat 50% 50% transparent;
     background-size: 13px;
 }
+
+#gtalklet_layer .gtalklet_jump_list .gtalklet_icon_button.signout:hover {
+    background-color: crimson;
+}
+
 #gtalklet_layer .gtalklet_presence.unavailable {
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAWJJREFUeNrUU79PwkAUvv5IG6iAg8HEMIlxNLBCNxkkYah/gP6NmAChiYQUupjA4uCicbKJBQ0E24OWtvjdgCHGdmHyJV/efffuvrx37x232WzIPsaTPW1vAXGXaJpGRFGUOY67AD0FMsAX8IpSH4Mg8JrNZrwATI6i6KrRaGjVarWWTqePXde1TdO873Q67GYX8GIFwjAs1ev160qlckMp5QG2XQC/Xa1WnK7r7+APsQLr9fq8XC7XbNvmWXd832d7BFnxxWKxhnUvUQAXcqg/7zgOcRyKjIKfmCRJeRZPfETP89zJ5HO6XIYngiAThq1R6k5ZPLGNOPBsGMYglcpEsqyQLSRJicbj8YDFEzOwLGvUat21KfVFVb1Us9nc0WIx/xgOe2a/323PZrPRbwFud5RRvyQIwpmiKCX4AvgB4g6684Z2PsG/MJ4kIMAdsnn4Y+jYi85x3o8V+J+f6VuAAQDR57f+eJX9fgAAAABJRU5ErkJggg==); /* /img/offline.png */
 }
@@ -251,9 +277,6 @@ div#gtalklet_layer {
     background-color: white;
 }
 
-#gtalklet_layer .gtalklet_jump_list .gtalklet_icon_button.signout:hover {
-    background-color: crimson;
-}
 
 /* panel toolbar */
 #gtalklet_layer .gtalklet_toolbar_handler {

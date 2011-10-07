@@ -21,6 +21,11 @@ Strophe.addConnectionPlugin('connectionmanager', {
     _receiveTimer: null,
     _reconnectInterval: null,
 
+    running: {
+        autoReconnect: true,
+        reconnectInterval: 10,
+    },
+
     // default config
     config: {
         // try to reconnet continously, even after a graceful disconnect
@@ -49,6 +54,10 @@ Strophe.addConnectionPlugin('connectionmanager', {
         for(var c in config){
             if(config.hasOwnProperty(c)){
                 this.config[c] = config[c];
+
+                if (this.running[c]) {
+                    this.running[c] = config[c];
+                }
             }
         }
     },
@@ -120,7 +129,7 @@ Strophe.addConnectionPlugin('connectionmanager', {
         this.enabled = false;
     },
 
-    reconnect: function(){
+    reconnect: function() {
         this.conn.disconnect();
         this.conn._onDisconnectTimeout(); // clears requests
         this.conn.connect(this.conn.jid, this.conn.pass,
@@ -159,16 +168,16 @@ Strophe.addConnectionPlugin('connectionmanager', {
                 this.resendAll();
             }
 
-            this.config.autoReconnect = true;
+            this.running.autoReconnect = this.config.autoReconnect;
         }
         else if(status == Strophe.Status.DISCONNECTING){
             if(condition == "logout"){
                 // disable auto reconnect
-                this.config.autoReconnect = false;
+                this.running.autoReconnect = false;
             }
         }
         else if(status == Strophe.Status.DISCONNECTED){
-            if(this.config.autoReconnect){
+            if(this.running.autoReconnect){
                 clearInterval(this._reconnectInterval);
                 this._reconnectInterval = setInterval(
                     function(){

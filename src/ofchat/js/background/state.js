@@ -312,25 +312,47 @@ $.extend(state, {
                               }
                           });
 
+			  if (segment == " ") {
+			
+			  } else if (segment == "  ") {
+			
+			  } else {
+			  
+			   	if (segment[0] == " ") segment = segment.substring(1);			
+				if (segment[0] == " ") segment = segment.substring(1);				   	
+			  }
+                              	  
+
                           $.grep(contacts, function(e, i) {
                           
                              if (e.jid.indexOf("@") > -1)
                              {
-                                 if (segment == " ")	// use spacebar to filter only online contacts
+                                 if (segment == " ")	// use spacebar to filter first 14  online contacts
                                  {
 				      if (e.presence.type.toLowerCase() != "unavailable") 
-				      {				      	
+				      {	
+				      	matchedContactsSum++;	
+				      		
 				      	if (matchedContactsSum < 14)
-				      	{
-				      		matchedContactsSum++;				      	
+				      	{			      	
+				      		matchedContacts.unshift(e);
+				      	}
+				      }
+
+                                 } else if (segment == "  ")	{ // use double spacebar to next 14 online contacts
+
+				      if (e.presence.type.toLowerCase() != "unavailable") 
+				      {	
+				      	matchedContactsSum++;	
+				      		
+				      	if (matchedContactsSum > 13 && matchedContactsSum < 28)
+				      	{			      	
 				      		matchedContacts.unshift(e);
 				      	}
 				      }
 				      
                                  } else {
-                              
-                              	      if (segment[0] == " ") segment = segment.substring(1);
-                              	      
+                                                            	      
 				      var jid = e.jid.toLowerCase();
 				      var name = e.name ? e.name.toLowerCase() : "";
 
@@ -485,7 +507,30 @@ $.extend(state, {
                       state.user.jid = parameters.jid;
                       state.user.name = parameters.name;
                       state.user.avatar = parameters.avatar;
+                      
+                      state.user.family = parameters.family;  
+                      state.user.given = parameters.given;  
+                      state.user.nickname = parameters.nickname;  
+                      state.user.middle = parameters.middle;                        
 
+                      state.user.email = parameters.email;  
+                      state.user.url = parameters.url;  
+
+                      state.user.workPhone = parameters.workPhone;  
+                      state.user.homePhone = parameters.homePhone; 
+                      state.user.workMobile = parameters.workMobile;  
+                      state.user.homeMobile = parameters.homeMobile;                       
+
+                      state.user.street = parameters.street;  
+                      state.user.locality = parameters.locality; 
+                      state.user.region = parameters.region;  
+                      state.user.pcode = parameters.pcode;                       
+                      state.user.country = parameters.country;                       
+
+                      state.user.orgName = parameters.orgName;                       
+                      state.user.orgUnit = parameters.orgUnit; 
+                      state.user.title = parameters.title; 
+                      
                       state.user.presence.type = state.PRESENCE_TYPE.CHAT;
                       state.user.presence.message = state.PRESENCE_MESSAGE[state.PRESENCE_TYPE.CHAT];
 
@@ -531,18 +576,38 @@ $.extend(state, {
                       returns.presence = state.user.presence;
                       break;
                   case 'loadUser':
-                      // parameters.jid
-                      // parameters.name
-                      // parameters.avatar
+                      // parameters.  see below                   
+                      
                       // no returns
                       var jid = parameters.jid;
 
-                      if (parameters.name && parameters.name != "") 
+                      if (parameters.name != "") 
                       {
                       	  state.user.contacts[jid].name = parameters.name;
                       }
-                      state.user.contacts[jid].avatar = parameters.avatar;                      
+                      state.user.contacts[jid].avatar = parameters.avatar;  
+                      state.user.contacts[jid].family = parameters.family;  
+                      state.user.contacts[jid].given = parameters.given;  
+                      state.user.contacts[jid].nickname = parameters.nickname;  
+                      state.user.contacts[jid].middle = parameters.middle;                        
+
+                      state.user.contacts[jid].email = parameters.email;  
+                      state.user.contacts[jid].url = parameters.url;  
+
+                      state.user.contacts[jid].workPhone = parameters.workPhone;  
+                      state.user.contacts[jid].homePhone = parameters.homePhone; 
+                      state.user.contacts[jid].workMobile = parameters.workMobile;  
+                      state.user.contacts[jid].homeMobile = parameters.homeMobile;    
                       
+                      state.user.contacts[jid].street = parameters.street;  
+                      state.user.contacts[jid].locality = parameters.locality; 
+                      state.user.contacts[jid].region = parameters.region;  
+                      state.user.contacts[jid].pcode = parameters.pcode;                       
+                      state.user.contacts[jid].country = parameters.country;
+
+                      state.user.contacts[jid].orgName = parameters.orgName;                       
+                      state.user.contacts[jid].orgUnit = parameters.orgUnit;                      
+                      state.user.contacts[jid].title = parameters.title;                      
                       break;
                   case 'toggleConsole':
                   
@@ -748,11 +813,26 @@ $.extend(state, {
                                                         timestamp: timestamp,
                                                         content: message});
 
-                              var user = {
-                                  jid: from,
-                                  name: state.user.contacts[from] ? state.user.contacts[from].name : from,
-                                  presence: state.user.contacts[from] ? state.user.contacts[from].presence : {type: '', message: ''}
-                              };
+
+			      if (type == "invite")
+			      {
+
+				      var user = {
+					  jid: from,
+					  avatar: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAgACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD26p7K0ub2byrWF5X77RwPcntUFeg+CYok0CJozkyMzP8A72cfyAoA4vUdLv8ATz/pVuyr2ccr+YqlXquowQXFlLDcKDEyHdn09a8qFAB7V3/hDS7vTrVjczACXDCED7pwOp9exHtXOeCbbz9cSQ42wIXOfXoP55/CvQaAM/xBZXF/pkltbziJnxnI4YZ6E9hXm1xDLbzvBMhSRDhga9Zrj/iFaAG3vgef9Uw/Mj+tAH//2Q==',
+					  name: from,
+					  presence: {type: 'unavailable', message: ''}
+				      };
+			      
+			      } else {
+			      
+				      var user = {
+					  jid: from,
+					  avatar: state.user.contacts[from].avatar,
+					  name: state.user.contacts[from] ? state.user.contacts[from].name : from,
+					  presence: state.user.contacts[from] ? state.user.contacts[from].presence : {type: '', message: ''}
+				      };
+			      }
 
                           } else {
                               // ????????
@@ -896,14 +976,57 @@ $.extend(state, {
                   case 'closeThread':
                       // parameters.threadId
                       var threadId = parameters.threadId;
-
                       var thread = this._getThread(threadId);
 
                       thread.ui.state = state.PANEL_STATE.COLLAPSED;
                       thread.ui.lastActivity = this._now(true);
                       var moved = this._moveThread(thread, true);
                       break; 
+
+		  case 'showProfile':
+
+		      if (state.user.jid)
+		      {
+			      var profile_url = chrome.extension.getURL('html/vcard.html') + '?user=' + state.user.jid;
+
+			      chrome.tabs.getAllInWindow(null,function(tabs)
+			      {
+				var profile_tab = tabs.filter(function(t) { return t.url === profile_url; });
+
+				    if(profile_tab.length){
+
+					chrome.tabs.update(profile_tab[0].id, {selected: true});
+				    }else{
+					chrome.tabs.create({url: profile_url, selected: true});
+				    }
+				});
+			}
+			break;
+
+                  case 'openVCard':
+                      // parameters.threadId
+                      var threadId = parameters.threadId;
+                      var thread = this._getThread(threadId);
                       
+                      state.user.contacts[thread.user.jid].messages = thread.messages;
+                     
+                      var vCardURL = chrome.extension.getURL('html/vcard.html?thread=' + threadId + '&user=' + thread.user.jid); 
+                      
+		      chrome.tabs.getAllInWindow(null, function(tabs)
+		      {
+			    var vcard_tab = tabs.filter(function(t) { return t.url === vCardURL; });
+
+			    if (vcard_tab.length > 0)
+			    {
+				chrome.tabs.update(vcard_tab[0].id, {selected: false});
+				
+			    } else{
+			    
+				chrome.tabs.create({url: vCardURL, selected: false});
+			    }
+		      });                      
+                      
+                      break;
                   case 'openVideo':
                       // parameters.threadId
                       

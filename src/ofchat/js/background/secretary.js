@@ -56,11 +56,13 @@ secretary.signin = function() {
     var password = boss.options('PASSWORD');
 
     this._connect(service, jid, password);
+    this._connection.connectionmanager.enable();
 };
 
 secretary.signout = function() {
     if (this._connection) {
         this._connection.disconnect('logout');
+        this._connection.connectionmanager.disable();
     }
     this.active = false;
 };
@@ -138,9 +140,8 @@ secretary._connect = function(url, jid, password) {
                     self._connectTimeoutHandler();
                     break;
                 case Strophe.Status.DISCONNECTED:
-                    //boss.log('Disconnected');
+                    boss.log('Disconnected');
                     self.active = false;
-
                     if (self._signingOut) {
                         // ??
                         self._clearConnectTimeout();
@@ -389,11 +390,40 @@ var features = {
             var jid = parameters.jid || '';
             return this._connection.roster.unsubscribed(jid);
         },
+        
+	updateVCard: function()
+	{
+	      var avatar = state.user.avatar.split(";base64,");	      
+
+	      var iq = $iq({to: this._connection.domain, type: 'set'}).c('vCard', {xmlns: 'vcard-temp'})	    	    
+	      	.c("N").c("FAMILY").t(state.user.family).up().c("GIVEN").t(state.user.given).up().c("MIDDLE").t(state.user.middle).up().up()
+	     	.c("ORG").c("ORGNAME").t(state.user.orgName).up().c("ORGUNIT").t(state.user.orgUnit).up().up()
+	      	.c("FN").t(state.user.name).up()
+	      	.c("URL").t(state.user.url).up()
+		.c("TITLE").t(state.user.title).up()
+	      	.c("NICKNAME").t(state.user.nickname).up()
+		.c("PHOTO").c("TYPE").t(avatar[0].substring(5)).up().c("BINVAL").t(avatar[1]).up().up()
+	      	.c("EMAIL").c("WORK").up().c("INTERNET").up().c("PREF").up().c("USERID").t(state.user.email).up().up()
+	     	.c("TEL").c("PAGER").up().c("WORK").up().c("NUMBER").up().up()
+	     	.c("TEL").c("CELL").up().c("WORK").up().c("NUMBER").t(state.user.workMobile).up().up()
+	     	.c("TEL").c("VOICE").up().c("WORK").up().c("NUMBER").t(state.user.workPhone).up().up()
+	     	.c("TEL").c("FAX").up().c("WORK").up().c("NUMBER").up().up()
+	     	.c("TEL").c("PAGER").up().c("HOME").up().c("NUMBER").up().up()
+	     	.c("TEL").c("CELL").up().c("HOME").up().c("NUMBER").t(state.user.homeMobile).up().up()
+	     	.c("TEL").c("VOICE").up().c("HOME").up().c("NUMBER").t(state.user.homePhone).up().up()
+	     	.c("TEL").c("FAX").up().c("HOME").up().c("NUMBER").up().up()
+	     	.c("URL").t(state.user.url).up()
+	     	.c("ADR").c("WORK").up().c("STREET").t(state.user.street).up().c("LOCALITY").t(state.user.locality).up().c("REGION").t(state.user.region).up().c("PCODE").t(state.user.pcode).up().c("CTRY").t(state.user.country).up().up()
+		.c("ADR").c("HOME").up().c("STREET").up().c("LOCALITY").up().c("REGION").up().c("PCODE").up().c("CTRY").up().up()
+
+            	this._connection.sendIQ(iq); 	
+	},
+	        
         _loadSignedInUser: function(jid) {
             // http://xmpp.org/extensions/xep-0054.html
             // http://xmpp.org/extensions/xep-0153.html
             this._loadUser(jid, function(response) {
-                boss.report('connected', {jid: response.jid.toLowerCase(), name: response.name, avatar: response.avatar});
+                boss.report('connected', {jid: response.jid.toLowerCase(), name: response.name, avatar: response.avatar, family: response.family, given: response.given, nickname: response.nickname, middle: response.middle, email: response.email, url: response.url, homePhone: response.homePhone, workPhone: response.workPhone, homeMobile: response.homeMobile, workMobile: response.workMobile, street: response.street, locality: response.locality, region: response.region, pcode: response.pcode, country: response.country, orgName: response.orgName, orgUnit: response.orgUnit, title: response.title});
             });
 
             this._changePresence();
@@ -411,12 +441,66 @@ var features = {
                     var name = $response.find('vCard FN').text();
                     var $photo = $response.find('vCard PHOTO');
                     var avatar = 'data:' + $photo.find('TYPE').text() + ';base64,' + $photo.find('BINVAL').text();
-                    var response = {jid: jid.toLowerCase(), name: name, avatar: avatar};                    
-                    callback(response);
+                    
+                    var family = $response.find('vCard N FAMILY') ? $response.find('vCard N FAMILY').text() : "";
+		    var middle = $response.find('vCard N MIDDLE') ? $response.find('vCard N MIDDLE').text() : "";                    
+                    var given = $response.find('vCard N GIVEN') ? $response.find('vCard N GIVEN').text() : "";
+                    
+                    var nickname = $response.find('vCard NICKNAME') ? $response.find('vCard NICKNAME').text() : "";
+
+                    var email = $response.find('vCard EMAIL USERID') ? $response.find('vCard EMAIL USERID').text() : "";
+                    var url = $response.find('vCard URL') ? $response.find('vCard URL').text() : "";
+                    
+                    var workPhone = "";
+                    var homePhone = "";   
+                    var workMobile = "";
+                    var homeMobile = "";                      
+
+                    $response.find('vCard TEL').each(function() 
+		    {	
+		    	if ($(this).find('VOICE').size() > 0 && $(this).find('WORK').size() > 0)		    	
+		    		workPhone = $(this).find('NUMBER').text();
+		    		
+		    	if ($(this).find('VOICE').size() > 0 && $(this).find('HOME').size() > 0)		    	
+		    		homePhone = $(this).find('NUMBER').text();
+		    		
+		    	if ($(this).find('CELL').size() > 0 && $(this).find('WORK').size() > 0)		    	
+		    		workMobile = $(this).find('NUMBER').text();
+		    		
+		    	if ($(this).find('CELL').size() > 0 && $(this).find('HOME').size() > 0)		    	
+		    		homeMobile = $(this).find('NUMBER').text();		    		
+		    		
+		    });
+
+                    var street = "";
+                    var locality = "";   
+                    var region = "";
+                    var pcode = "";  
+                    var country = "";  
+                    
+                    $response.find('vCard ADR').each(function() 
+		    {	
+		    	if ($(this).find('WORK').size() > 0)
+		    	{
+		    		street = $(this).find('STREET').text();
+		    		locality = $(this).find('LOCALITY').text();
+		    		region = $(this).find('REGION').text();
+		    		pcode = $(this).find('PCODE').text();		    		
+		    		country = $(this).find('CTRY').text();		    		
+		    	}		    		
+		    });		    
+
+                    var orgName = $response.find('vCard ORG ORGNAME') ? $response.find('vCard ORG ORGNAME').text() : "";
+                    var orgUnit = $response.find('vCard ORG ORGUNIT') ? $response.find('vCard ORG ORGUNIT').text() : "";
+                    var title = $response.find('vCard TITLE') ? $response.find('vCard TITLE').text() : "";
+                    
+                    var callbackResponse = {jid: jid.toLowerCase(), name: name, avatar: avatar, family: family, given: given, nickname: nickname, middle: middle, email: email, url: url, homePhone: homePhone, workPhone: workPhone, homeMobile: homeMobile, workMobile: workMobile, street: street, locality: locality, region: region, pcode: pcode, country: country, orgName: orgName, orgUnit: orgUnit, title: title};                    
+                   
+                    callback(callbackResponse);
                 }
             );
             
-	    ms = new Date().getTime() + 100;	// hack to delay multiple vCard requests
+	    ms = new Date().getTime() + 200;	// hack to delay multiple vCard requests
 	    while (new Date() < ms){}        
         },
         
@@ -508,7 +592,7 @@ var features = {
 
                 for (index in contacts) 
                 {  
-                    //console.log("_loadContacts - _loadUser " + contacts[index].jid)
+                    console.log("_loadContacts - _loadUser " + contacts[index].jid)
 
                     self._loadUser(contacts[index].jid, function(response) {
                         boss.report('loadUser', response);
@@ -517,7 +601,7 @@ var features = {
 
                 for (index in contacts) 
                 {  
-                    //console.log("_loadContacts - _loadMessages " + contacts[index].jid)
+                    console.log("_loadContacts - _loadMessages " + contacts[index].jid)
                 
                     self._loadMessages(contacts[index].jid, function(response) {
                   
@@ -551,7 +635,7 @@ var features = {
 				var avatar = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAgACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6E+LPjLUNIuoPD2izLbaldQ+cbl4wwijyVG0EY3EgnJyBt5BzXkFl4k1u08YbLy6+1Xsrgx3vCyR/Lg5CDDD2469cZpnxy8ZWWs+O0l0XfjT4TZSTk7TK6yNu2jOCoPAPUlm7AZr/AApv7S5vr2+v42eUBMeYBuQfMDx2ydtfEZti5yru0tFt5Hv5c6Ps1H7TPVE8Ya3F5Miasblo2HmQSQJFvHocqCoPTNehaFr1vqllBdQnCzoHCsMEZHSvAvGWsW9rBPfwyiAIMI5HGTnHQ1u/BrxWNWsUUFUkt2Ecsa5wvGRjPPT9QR2r0OH8TWrSm5yvHpfv/kGa4JU6SqRjbuec+Ofhb4r0PWbtYbZryxHzQ3aFAsi5OAVLZDAAZGMdwTzXEWN7PpmpGVPkuomKvjg7u6ntkdK+5NasFvLZkPGVIrxXxl8INKu72a+imubaSQgsI9hUnjnDIcH6V9NleEweEqznUhzcys76o+XxVOpOzpys0eS/FLVtP1PxTJY6YJF0yNkjgkJMhb5Qd4Dcg5bp7YrqPgbZ3NhCLyVgTdRptUfwqC5HPvv6emKkf4WWqThpbm5mVT90xxKG9jhBXoHhDw99nMSLGkaJgAAYwOa7MS8K4xjh4W5fK33muGq4qMZxqTupWb9Uf//Z";
 				var presence = { type: state.PRESENCE_TYPE.CHAT,  message: state.PRESENCE_MESSAGE[state.PRESENCE_TYPE.CHAT]};
 				
-				contacts[jid] = {jid: jid, name: name, invited: false, rejected: false, presence: presence, avatar: avatar};
+				contacts[jid] = {jid: jid, name: name, invited: false, rejected: false, presence: presence, avatar: avatar, room: true};
 				
 				boss.report('loadContacts', {contacts: contacts});				
 				
@@ -584,11 +668,31 @@ var features = {
             var time = features['xmpp']._now();
             var timestamp = features['xmpp']._now(true);
             
-            
+            if (!type)
+            {
+            	type = 'chat';
+            }
+
+	    if (from.indexOf("@") == -1)
+	    {
+	   	from = "admin@" + from;			
+	    } 
+		
             // ??FullJid
             // todo
             
-            //features['xmpp']._toFullJid[from] = jid;
+            if (!features['xmpp']._toFullJid[from])		// user not on roster, add
+            {
+            	    features['xmpp']._toFullJid[from] = jid;
+            	    
+		    var contacts = {};
+		    contacts[from] = {jid: from, name: Strophe.getNodeFromJid(from), rejected: false};
+		    boss.report('loadContacts', {contacts: contacts});
+
+		    features['xmpp']._loadUser(from, function(response) {
+			boss.report('loadUser', response);
+		    });            
+            }
             
             //offline
             var $error = $message.children('error');
@@ -636,11 +740,9 @@ var features = {
                 
                 if (messageText) 
                 {                
-                    if (type == "chat") 
-                    {
-                    	boss.showNotification('', from, messageText);
+                    boss.showNotification('', from, messageText);
                     
-                    } else {
+                    if (type == "groupchat") {
                     
 			var mucNick = Strophe.getResourceFromJid(jid);
 			var thisNick = Strophe.getNodeFromJid(state.user.jid);
@@ -678,6 +780,11 @@ var features = {
                     var contacts = {};
                     contacts[jid] = {jid: jid, name: name, rejected: false};
                     boss.report('loadContacts', {contacts: contacts});
+                    
+                    features['xmpp']._loadUser(jid, function(response) {
+                        boss.report('loadUser', response);
+                    });
+                    
                     break;
                 case 'unsubscribe':
                     // ?????????

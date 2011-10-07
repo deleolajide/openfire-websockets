@@ -169,6 +169,7 @@ _listen = function() {
 _callbackOnRequest = function(request, port) {
     var callback = request.callback;
     var request = request.data;
+    
     var sender = port;
     if (sender.tab && sender.tab.index >= 0) { // ??index???chrome omnibar instant preview warning??
         switch (request.report) {
@@ -191,7 +192,7 @@ _callbackOnRequest = function(request, port) {
                 chrome.pageAction.setIcon({path: '/icon_' + suffix + '.png', tabId: sender.tab.id});
                 chrome.pageAction.setTitle({title: title, tabId: sender.tab.id});
                 chrome.pageAction.show(sender.tab.id);
-                break;
+                break;                
             case 'showExtensionOption':
                 // ??????tab
                 chrome.tabs.getAllInWindow(null,function(tabs){
