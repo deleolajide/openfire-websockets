@@ -91,9 +91,6 @@ window.addEvent("domready", function () {
         settings.manifest.desktop_notification.addEvent("action", function() {
             background.boss.optionUpdated("DESKTOP_NOTIFICATION", settings.manifest.desktop_notification.get());
         });
-        settings.manifest.use_redfire.addEvent("action", function() {
-            background.boss.optionUpdated("USE_REDFIRE", settings.manifest.use_redfire.get());
-        });
 
         settings.manifest.signout.addEvent("action", function() {
             background.boss.signout();

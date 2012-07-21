@@ -2,6 +2,14 @@
  * micro-templating?boss state
  */
 
+var _jingleCalls = {}
+var _jingleRequests = {}
+var _myJid = null;
+var _myName = null;
+var _myVideoPanel = null;
+var _invitedMUCJids = {};
+var _activeMUCJids = {};
+
 var assistant = (function() {
 
 var _template = [
@@ -81,8 +89,9 @@ var _template = [
                        '<div class="gtalklet_contact_name" title="<%=threads[i].user.jid%>">',
                            '<%=threads[i].user.name%>',
                        '</div>',                           
-                       '<div class="gtalklet_open_video"></div>',                       
-                       '<div class="gtalklet_close_thread"></div>',
+                       '<div class="gtalklet_open_audio" title="Start audio conversation"></div>',                        
+		       '<div class="gtalklet_open_video" title="Start video conversation"></div>',                        
+                       '<div class="gtalklet_close_thread" title="Close conversation"></div>',
                    '</div>',
                    '<div class="gtalklet_panel_content_wrapper">',
                         '<div class="gtalklet_panel_content">',
@@ -174,6 +183,7 @@ var $ = null,
 
         thread: '.gtalklet_thread',
         titleBar : '.gtalklet_thread .gtalklet_title_bar',
+        openAudio: '.gtalklet_open_audio',
         openVideo: '.gtalklet_open_video',
         openVCard: '.gtalklet_thread .gtalklet_title_bar .gtalklet_contact_vcard',        
         close: '.gtalklet_close_thread',        
@@ -193,7 +203,8 @@ init = function(_$) {
 /**
  * boss?state?
  */
-handleStateChange = function(stateChange) {
+handleStateChange = function(stateChange) 
+{
     if (action[stateChange.report] && action[stateChange.report].callback) {
         action[stateChange.report].callback(stateChange.returns);
     }
@@ -359,7 +370,7 @@ _bindOperations = function() {
     $layer.delegate(selectors.presence + '.signin', 'click', function() {
         follower.report('signin'); // signedin
     });
-    
+    		    
     // action
     for (index in action) {
         if (action[index].delegate) {
@@ -367,6 +378,7 @@ _bindOperations = function() {
         }
     }
 },
+
 
 /**
  * 
@@ -769,9 +781,24 @@ action = {
             // returns.createdThread
             var thread = returns.createdThread;
             action.createPanel.run(thread, true);
+            
+	    if (thread.chatType == "groupchat")
+	    {
+		follower.report('getRoomJids', {jid: returns.jid, threadId: thread.id});	  
+	    }
         }
     },
-    // 
+
+    returnRoomJids: {
+    
+  	callback: function(returns) {
+            // returns.jid
+            
+            _invitedMUCJids[returns.jid] = returns;  
+            _activeMUCJids[returns.jid] = [];
+        }        
+    }, 
+
     closeThread: {
         selector: selectors.close,
         event: 'click',
@@ -792,37 +819,348 @@ action = {
             });
         },
         callback: function(returns) {
-            // returns.threadId
+            // returns.threadId, thread
             var threadId = returns.threadId;
             var $thread = $('.gtalklet_thread[data-thread-id=' + threadId + ']');
             $thread.remove();
+
+	    console.log("closeThread " + returns.thread.user.jid);	
+		
+	    if (returns.thread.chatType == "groupchat")
+	    {
+		    var jids = _activeMUCJids[returns.thread.user.jid];
+		    
+		    for (jid in jids)
+		    {
+			console.log("closeThread MUC " + jids[jid]);
+
+			if (jids[jid] != _myName)
+			{	    
+			    this.closeWindow(jids[jid]);	
+
+			} else {
+
+			    this.closeMyWindow();
+			}
+		    }	    
+	    
+	    } else {
+
+		console.log("closeThread chat " + returns.thread.user.jid);	    
+		
+		var jid = returns.thread.user.jid + "/ofchat";
+		this.closeWindow(jid);		    
+	    }
+        },
+        
+        closeWindow: function(jid) {
+	    console.log("closeWindow " + jid);	
+	    
+	    var data = _jingleRequests[jid];
+	    
+	    if (data != null)
+	    {
+		var call = _jingleCalls[data.id];
+		
+		call.hangup();
+
+		if (call._videoPanel != null) 
+		{   
+			call._videoPanel.unload();  
+			call._videoPanel = null;	    
+		}
+		
+	    	_jingleCalls[data.id] = null; 		    
+	    }
+
+	    _jingleRequests[jid] = null;       
+        },
+        
+        closeMyWindow: function() {   
+	    console.log("closeMyWindow");	
+
+	    if (_myVideoPanel != null) 
+	    {   
+		_myVideoPanel.unload();  
+		_myVideoPanel = null;	    
+	    }	          
         }
     },
-    
-    openVideo: {
-        selector: selectors.openVideo,
-        event: 'click',
+      
+    doWebRTC: {
 
-        run: function(threadId) {
-            threadId = threadId || '';
-            var base = this;
-            follower.report('openVideo', {threadId: threadId}, function(stateChange) {
-                base.callback(stateChange.returns);
-            });
+    	doMakeCall: function(callType, threadId, jid, chatType, name) 
+    	{
+ 		console.log("doMakeCall " + callType.video + " " + jid);
+ 		var base = this;
+ 		
+ 		base.callType = callType;
+ 		base.threadId = threadId;
+ 		base.jid = jid;
+ 		base.chatType = chatType;
+ 		base.name = name;
+
+		if (typeof(navigator.webkitGetUserMedia) != 'undefined') 
+		{ 		
+			navigator.webkitGetUserMedia(callType,  
+
+				function(stream) 
+				{
+				    var url = webkitURL.createObjectURL(stream);  
+
+				    console.log("doMakeCall " + base.callType);     
+
+				    base.localVideoStream = stream;
+				    base.startCall(base.callType, base.threadId, base.jid, base.chatType, base.name);
+				},
+
+				function(error) 
+				{
+					Boxy.alert("<img src='" + chrome.extension.getURL("icon48.gif") + "'/>Media Stream Error " + error);
+				}); 
+				
+		} else {
+
+		    Boxy.alert("<h2>WebRTC (webkitGetUserMedia) is not enabled or supported!!!</h2>");		
+		}				
+	},
+    
+    	startCall: function(callType, threadId, jid, chatType, name) {
+
+		if (typeof(webkitPeerConnection00) != 'undefined') 
+		{
+		    console.log("openVideo run " + chatType);
+
+		    threadId = threadId || '';
+		    var now = new Date();                  	
+		    var time = now.toLocaleTimeString();
+		    var timestamp = now.getTime();  
+
+		    if (chatType == "groupchat")
+		    {
+			this.doJingle(callType,  _invitedMUCJids[jid]);
+
+		    } else {
+			var sessionId = "webrtc" + Math.random().toString(36).substr(2,9);
+			var jingleCall = new JingleCall(callType, this.localVideoStream, sessionId, Direction.OUTBOUND);
+			_jingleCalls[sessionId] = jingleCall;		    
+
+			jingleCall.name = name;	
+			jingleCall.chatType = "chat";
+			jingleCall.initiator = _myJid;
+			jingleCall.remoteJid = jid + "/ofchat";
+			jingleCall.state = CallState.INITIAL;
+			jingleCall.threadId = threadId;
+			jingleCall.start();
+
+			var message = {type: 'chat_recieved', from: jingleCall.remoteJid, time: time, timestamp: timestamp, content: "<font color='blue'>Close this panel to terminate call</font>"}
+			action.showMessages.run(threadId, [message]);
+		    }
+		    
+		} else {
+
+		    Boxy.alert("<h2>WebRTC (webkitPeerConnection00) is not enabled or supported!!!</h2>");		
+		}  	
+    	},
+    
+  	doJingle: function(callType, returns) {
+            // returns.nicks, jid, threadId
+
+	    var localVideoUrl = webkitURL.createObjectURL(this.localVideoStream);
+			
+	    for (nickname in returns.nicks)
+	    {
+		console.log("doJingle " + returns.nicks[nickname]);
+	    
+	        if (returns.nicks[nickname] != _myName)
+	        {
+			var sessionId = "webrtc" + Math.random().toString(36).substr(2,9);
+			var jingleCall = new JingleCall(callType, this.localVideoStream, sessionId, Direction.OUTBOUND);
+			_jingleCalls[sessionId] = jingleCall;		    
+
+			jingleCall.chatType = "groupchat";
+			jingleCall.initiator = _myJid;	
+			jingleCall.remoteJid = returns.jid + "/" + returns.nicks[nickname];
+			jingleCall.state = CallState.INITIAL;
+			jingleCall.threadId = returns.threadId;
+			jingleCall.start()
+			
+		    	var now = new Date();                  	
+		    	var time = now.toLocaleTimeString();
+		    	var timestamp = now.getTime();  
+			var message = {type: 'chat_recieved', from: jingleCall.remoteJid, time: time, timestamp: timestamp, content: "<font color='blue'>Jingle Group Call: " + returns.nicks[nickname] + "</font>"}
+			action.showMessages.run(returns.threadId, [message]);
+			
+			_activeMUCJids[returns.jid].push(jingleCall.remoteJid);
+
+		} else {
+
+			var content = "<video width=320 height=240 src='" + localVideoUrl + "' autoplay='autoplay' />";	
+			
+			if (this._myVideoPanel != null) this._myVideoPanel.remove(); 
+
+			if (call.callType.video == true)
+			{
+				_myVideoPanel = new Boxy(content, {
+					title: _myName, 
+					show: true, 
+					x: 10,
+					y: 10,
+					draggable: true, 
+					unloadOnHide: true,
+					beforeUnload: this.onUnload
+				});
+				
+			} else {
+
+				_myVideoPanel = jQuery(content).css('display', 'none').appendTo(document.body);   	
+			}				
+			
+		}
+	    }
         },
+        
+        onUnload: function() {
+        
+        	console.log("Closing local video");
+        	_myVideoPanel = null;
+        } 
+    },
+
+    openAudio: {
+	selector: selectors.openAudio,
+	event: 'click',    
+	
+	run: function(threadId, jid, chatType, name) {	
+
+		action.doWebRTC.doMakeCall({audio:true, video:false}, threadId, jid, chatType, name);
+        },
+        
         delegate: function() {
             var base = this;
-            $layer.delegate(this.selector, this.event, function(event) {
-                var threadId = $(this).closest(selectors.thread).attr('data-thread-id');
-                base.run(threadId);
+            
+            $layer.delegate(this.selector, this.event, function(event) {                
+                var $thread = $(this).closest('div.gtalklet_thread');
+                var threadId = $thread.attr('data-thread-id');
+                var jid = $thread.attr('data-jid');
+		var name = $thread.find('.gtalklet_contact_name').text();
+                var chatType = $thread.attr('data-chatType');
+                
+                base.run(threadId, jid, chatType, name);
                 event.stopPropagation();
             });
         },
-        callback: function(returns) {
-            // returns.threadId
-            var threadId = returns.threadId;
+    },
+ 
+ 
+    openVideo: {
+	selector: selectors.openVideo,
+	event: 'click',
 
-        }
+	run: function(threadId, jid, chatType, name) {
+		
+		action.doWebRTC.doMakeCall({audio:true, video:true}, threadId, jid, chatType, name);
+        },
+        
+        delegate: function() {
+            var base = this;
+            $layer.delegate(this.selector, this.event, function(event) {                
+                var $thread = $(this).closest('div.gtalklet_thread');
+                var threadId = $thread.attr('data-thread-id');
+                var jid = $thread.attr('data-jid');
+		var name = $thread.find('.gtalklet_contact_name').text();
+                var chatType = $thread.attr('data-chatType');
+                
+                base.run(threadId, jid, chatType, name);
+                event.stopPropagation();
+            });
+        },              
+    },
+                   
+    jingleEvent: {
+    
+    	callback: function(data) 
+    	{
+	     console.log("handleJingle");
+	     console.log(data);
+
+	     var call = null;
+	      _jingleRequests[data.from] = data;	     
+
+	     switch(data.jingleRequest) 
+	     {
+		 case "session-initiate":
+	    
+		    var message = '<h1>' + (data.media.audio ? 'Audio ' : '')  + (data.media.video ? 'Video ' : '')  + ' request from ' + data.from + '</h1>'
+
+		    Boxy.ask(message, ['Accept', 'Reject'], function(response) 
+		    {
+			if (response == 'Accept')
+			{
+				action.acceptVideo.run(data.from, data.media);
+			}
+			
+			if (response == 'Reject')
+			{
+				action.rejectVideo.run(data.from, data.media);
+			}			
+			
+		    });
+		    
+		    break;
+
+
+		 case "session-accept":	// Accepted Outbound Call
+		    
+		    var call = _jingleCalls[data.id] || null;	     	 
+		    
+		    if (call != null)
+		    {
+			    call.state = CallState.CONNECTED;
+			    call.processSDP(data.sdp);
+		    
+		    }
+		    break;
+
+		 case "session-terminate":
+
+		    var call = _jingleCalls[data.id] || null;	
+
+		    if (call != null)
+		    {	
+		    	    call.hangup();
+		    	    
+			    call.state = CallState.DISCONNECTED;
+
+			    if (call._videoPanel != null) 
+			    {
+				call._videoPanel.unload();  
+				call._videoPanel = null;
+			    }
+		    }
+		    
+		    break;
+
+
+		 case "session-info":
+
+		    var call = _jingleCalls[data.id] || null;	
+		    
+		    if (call != null)
+		    {		    
+		    	call.state = CallState.RINGING;
+		    }
+		    
+		    break;
+	     }
+
+	     console.log("handleJingle send reply " + data.jingleRequest + " " + data.id);
+
+	     // Send Reply
+
+	     if (call != null) call.sendACK(data.id);     
+
+        }        
     },
     
     openVCard: {
@@ -858,6 +1196,7 @@ action = {
             collapseFilterPanel = collapseFilterPanel || false;
             var threadId = thread.id;
             var jid = thread.user.jid;
+            var chatType = thread.chatType || "chat";
             
             var avatarImage = '<img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAgACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD26p7K0ub2byrWF5X77RwPcntUFeg+CYok0CJozkyMzP8A72cfyAoA4vUdLv8ATz/pVuyr2ccr+YqlXquowQXFlLDcKDEyHdn09a8qFAB7V3/hDS7vTrVjczACXDCED7pwOp9exHtXOeCbbz9cSQ42wIXOfXoP55/CvQaAM/xBZXF/pkltbziJnxnI4YZ6E9hXm1xDLbzvBMhSRDhga9Zrj/iFaAG3vgef9Uw/Mj+tAH//2Q==" />'
 
@@ -869,7 +1208,7 @@ action = {
             var presenceType = thread.user.presence.type;
             var presenceMessage = thread.user.presence.message;
             
-            var $createdThread = $('.gtalklet_thread.prototype').clone().removeClass('prototype').attr('data-thread-id', threadId).attr('data-jid', jid);
+            var $createdThread = $('.gtalklet_thread.prototype').clone().removeClass('prototype').attr('data-thread-id', threadId).attr('data-jid', jid).attr('data-chatType', chatType);
             
             $('.gtalklet_title_bar', $createdThread).find('.gtalklet_presence').addClass(presenceType).attr('data-switch-class', presenceType).attr('title', presenceMessage).end().find('.gtalklet_contact_name').html("<div class='gtalklet_contact_vcard'>" + thread.user.name + "</div>").attr('title', unescape(thread.user.jid));  
             
@@ -1335,6 +1674,10 @@ action = {
             action.toggleConsoleCommands.run(returns.commands);
 
             $('#gtalklet_operation').show('slow');
+            
+            _myJid = returns.jid;
+            _myName = _myJid.split("@")[0];
+            //_getLocalMedia();
         }
     },
     connectError: {
@@ -1394,12 +1737,15 @@ action = {
     },
     toggleHidden: {
         callback: function(returns) {
-            if (returns.hide && $layer) {
-                // ?visibility:hidden, ?display:none 
-                $layer.css('visibility', 'hidden');
-            } else {
-                $layer.css('visibility', 'visible');
-            }
+        
+            if ($layer) 
+            {
+		    if (returns.hide) {
+			$layer.css('visibility', 'hidden');
+		    } else {
+			$layer.css('visibility', 'visible');
+		    }
+	    }
         }
     },
     invite: {
@@ -1433,6 +1779,123 @@ action = {
             }
         }
     },
+    
+    acceptVideo: {
+        selector: '.gtalklet_video_ok',
+        event: 'click',
+
+        start: function(jid) {
+        
+	    var data = _jingleRequests[jid];
+	    var url = webkitURL.createObjectURL(this.localVideoStream);
+
+	    call = new JingleCall(this.callType, this.localVideoStream, data.id, Direction.INBOUND);
+	    _jingleCalls[data.id] = call;
+
+	    call.name = data.name;	
+	    call.chatType = data.chatType;			
+	    call.remoteJid = data.from;
+	    call.initiator = data.initiator;
+	    call.state = CallState.PROGRESS;
+
+	    console.log("handleJingle session-initiate " + call.remoteJid + " " + url);
+
+	    if (call.chatType == "groupchat" && _myVideoPanel == null)
+	    {	
+	    	var content = "<video width=320 height=240 src='" + url + "' autoplay='autoplay' />";				
+
+		if (call.callType.video == true)
+		{ 	    
+			_myVideoPanel = new Boxy(content, {
+				title: _myName, 
+				show: true, 
+				x: 10,
+				y: 10,
+				draggable: true, 
+				unloadOnHide: true,
+				beforeUnload: this.onUnload
+			});
+			
+		} else {
+
+			_myVideoPanel = jQuery(content).css('display', 'none').appendTo(document.body);   	
+		}
+
+		var roomJid = jid.split("/")[0];			
+		_activeMUCJids[roomJid].push(call.remoteJid);
+	    }	
+
+	    call.accept(data.sdp);	    	    		    
+	
+	    //$('#gtalklet_video_' + data.id).remove(); 		    
+
+        },
+
+    	run: function(jid, callType) 
+    	{
+ 		console.log("acceptVideo " + callType + " " + jid);
+ 		var base = this;
+ 		
+ 		base.callType = callType;
+ 		base.jid = jid;
+ 		
+		navigator.webkitGetUserMedia(callType,  
+		
+			function(stream) 
+			{			
+			    console.log("doMakeCall " + base.callType);     
+				
+			    base.localVideoStream = stream;
+			    base.start(base.jid);
+			},
+
+			function(error) 
+			{
+
+				Boxy.alert("<img src='" + chrome.extension.getURL("icon48.gif") + "'/>Media Stream Error " + error);
+			}); 
+	},
+        
+        delegate: function() {
+            var base = this;              
+            $layer.delegate(this.selector, this.event, function() {          
+               	var jid = $(this).attr('data-jid');
+	        var data = _jingleRequests[jid];
+               	
+                base.run(jid, data.media);                    
+            });
+        },
+        
+        onUnload: function() {
+        
+        	console.log("Closing local video");
+        	_myVideoPanel = null;
+        }        
+    },
+
+    rejectVideo: {
+        selector: '.gtalklet_video_no',
+        event: 'click',
+
+        delegate: function() {
+            $layer.delegate(this.selector, this.event, function() {
+                var jid = $(this).attr('data-jid'); 
+		var data = _jingleRequests[jid];
+
+		var jingleIq = "<iq type='set' to='" + data.from + "' id='" + data.id + "'>";
+		jingleIq = jingleIq + "<jingle xmlns='urn:xmpp:jingle:1' action='session-terminate' initiator='" + data.initiator + "' sid='" + data.id + "'>";
+		jingleIq = jingleIq + "<reason><decline/></reason></jingle></iq>"
+
+		follower.report('sendIQ', {iq: jingleIq}, function(stateChange) {
+
+		});   
+	                    	    
+		//$('#gtalklet_video_' + data.id).remove();
+            });
+        }
+    },
+    
+    
     acceptInvitation: {
         selector: '.gtalklet_invited_ok',
         event: 'click',
@@ -1520,7 +1983,7 @@ return {
     init: init,
     build: build,
     destroy: destroy,
-    handleStateChange: handleStateChange
+    handleStateChange: handleStateChange  
 };
 
 })();

@@ -1,5 +1,5 @@
 /**
- * follower对象，content script，根据boss的状态借助assistant更新自身显示
+ * follower???content script???boss?????assistant??????
  */
  
 var follower = (function(){
@@ -9,7 +9,7 @@ var _listened = false,
     $ = null,
 
 /**
- * 初始化follower
+ * ???follower
  */
 init = function(_$) {
     $ = _$;
@@ -20,7 +20,7 @@ init = function(_$) {
 },
 
 /**
- * 监听boss的指令
+ * ??boss???
  */
 _listen = function() {
     chrome.extension.onConnect.addListener(function(port) {
@@ -36,7 +36,7 @@ _sendRequest = function(data, callbackName) {
 },
 
 /**
- * 通知boss，有操作。boss会回调
+ * ??boss?????boss???
  */
 report = function(reportKey, parameters, callback) {
     if (callback) {
@@ -49,14 +49,16 @@ report = function(reportKey, parameters, callback) {
 
     _sendRequest({'report' : reportKey, 'parameters': parameters}, callbackName);
 },
- 
+
+
 /**
- * 接受boss的状态，回调/重建/调用assistant处理局部刷新
+ * ??boss??????/??/??assistant??????
  */
 _callbackUpdate = function(data, port) {
     var state = data;
+       
     if (state.callback) {
-        // 存在回调时，尝试调用
+        // ??????????
         var callback = state.callback;
         if (window[callback]) {
             window[callback](state.stateChange);
@@ -67,18 +69,20 @@ _callbackUpdate = function(data, port) {
             // disabled => enabled
             assistant.build(state, true);
             _sendRequest({report: 'showPageAction'});
+        } else if (state.jingleRequest) {
+            assistant.handleJingle(state);            
         } else if (state.disable) {
             // enabled => disabled
             assistant.destroy(true);
             _sendRequest({report: 'showPageAction'});
         } else {
             if ($.isEmptyObject(state.stateChange)) {
-                // state中没有stateChange 全部重建显示
+                // state???stateChange ??????
                 assistant.build(state);
                 _sendRequest({report: 'showPageAction'});
             } else {
-                // state中有stateChange
-                // 局部更新显示
+                // state??stateChange
+                // ??????
                 assistant.handleStateChange(state.stateChange);
             }
         }

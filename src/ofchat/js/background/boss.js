@@ -21,7 +21,7 @@ var _secretary = null,
  * ???boss
  */
 init = function(secretary, state) {
-    _secretary = secretary;
+    _secretary = secretary;    
     _state = state;
     
     _initVersion();
@@ -55,7 +55,6 @@ _initVersion = function() {
             options('USE_WEBSOCKETS', false);
             options('ALIGN', 'right'); 
             options('HISTORY_THREADS', '2'); 
-            options('USE_REDFIRE', false);          
             options('DESKTOP_NOTIFICATION', true);             
             options('AUTO_IDLE', true); 
             options('EXCLUDES', 'http*://mail.google.com/*\nhttp*://plus.google.com/*\nhttp*://www.facebook.com/*');
@@ -78,7 +77,6 @@ _processOption = function(key, value) {
             CUSTOM_BOSH_SERVICE: true,
             ALIGN: true,
             HISTORY_THREADS: true,
-            USE_REDFIRE: true,
             DESKTOP_NOTIFICATION: true,
             EXCLUDES: true
         };
@@ -88,10 +86,6 @@ _processOption = function(key, value) {
 
     if (updated.ALIGN) {
         options('ALIGN', options('ALIGN'));
-    }
-
-    if (updated.USE_REDFIRE) {
-        options('USE_REDFIRE', options('USE_REDFIRE'));
     }
     
     if (updated.DESKTOP_NOTIFICATION) {
@@ -161,7 +155,6 @@ _listen = function() {
     // ??????
     chrome.windows.onFocusChanged.addListener(boss._callbackOnFocusChanged);
 },
-
 
 /**
  * ??,??follower????????
@@ -420,7 +413,7 @@ showNotification = function(icon, title, message) {
  * 
  */
 log = function(message, level) {
-    console.log(message);
+    chrome.extension.getBackgroundPage().console.log(message);
     
     if (typeof(level) === 'undefined') {
         level = 'info';

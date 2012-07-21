@@ -657,6 +657,23 @@ $.extend(state, {
                       
                       // no returns
                       break;
+
+		  case 'jingleEvent':
+		  
+		      break;
+		  	
+                  case 'sendIQ':
+                      //parameters.iq
+
+
+		      console.log("sendIQ");
+		      console.log(parameters);
+		      
+		      features['xmpp']._connection._ws.send(parameters.iq);                      
+		      
+		      // no returns
+                      break;
+                      
                   case 'resizeTextarea':
                       //parameters.threadId
                       //parameters.height = 34 //16
@@ -685,11 +702,6 @@ $.extend(state, {
             
                       threadId = parameters.threadId;
                       var message = parameters.message;
-
-            	      if (message[0] == "/" || message.indexOf("/video/redfire_") > - 1) // don't echo commands
-            	      {
-            	      	break;
-            	      }
                       
                       thread = this._getThreadById(threadId);
                       // encode html tag
@@ -764,11 +776,6 @@ $.extend(state, {
                       
                       	var message = parameters.message;
                       }
-
-            	      if (message.indexOf("/video/redfire_") > - 1) // don't show video invitations
-            	      {
-            	      	break;
-            	      }                      
                       
 		      if (parameters.type == "groupchat")
 		      {
@@ -838,6 +845,7 @@ $.extend(state, {
                               // ????????
                               // copy object
                               var createdThread = $.extend(true, {}, this._getThread('prototype'));
+                              stateChange.report = 'recieved';
 
 			      if (type == "invite")
 			      {
@@ -878,11 +886,11 @@ $.extend(state, {
                               state.ui.pendingThreads.push(threadId);
 
                               stateChange.report = 'recievedThread';
-                              returns.jid = user.jid;
-                              returns.name = user.name;
-                              returns.threadId = threadId;
                           }
-                         
+
+                          returns.jid = user.jid;
+                          returns.name = user.name;
+                          returns.threadId = threadId;                         
                       }
 
                       break;
@@ -963,6 +971,17 @@ $.extend(state, {
                           returns.createdThread = createdThread;
                       }
 
+		      if (state.user.contacts[jid].room) 
+		      {  
+		      	  returns.createdThread.chatType = "groupchat";
+		      	  
+		      	  if (state.user.contacts[jid].autojoin != "true")
+		      	  {
+		      	  	features['xmpp']._connection.muc.join(jid, Strophe.getNodeFromJid(state.user.jid));
+		      	  }
+		      }
+
+
                       state.ui.filter = {
                           state: state.PANEL_STATE.COLLAPSED,  // ??????? collapsed | expand
                           scrollTop: 0, // ????
@@ -978,11 +997,28 @@ $.extend(state, {
                       var threadId = parameters.threadId;
                       var thread = this._getThread(threadId);
 
+		      if (state.user.contacts[thread.user.jid].room) 
+		      {  
+		      	  features['xmpp']._connection.muc.leave(thread.user.jid, Strophe.getNodeFromJid(state.user.jid));
+		      }
+		      
                       thread.ui.state = state.PANEL_STATE.COLLAPSED;
                       thread.ui.lastActivity = this._now(true);
                       var moved = this._moveThread(thread, true);
+                      
+                      returns.thread = thread;
+                      
                       break; 
 
+		  case 'getRoomJids':
+		      // parameters.jid
+		  
+		      break;
+		      
+		  case 'returnRoomJids':
+		  
+		      break;
+		      		      
 		  case 'showProfile':
 
 		      if (state.user.jid)
@@ -1027,81 +1063,7 @@ $.extend(state, {
 		      });                      
                       
                       break;
-                  case 'openVideo':
-                      // parameters.threadId
-                      
-		      if (!boss.options('USE_REDFIRE'))
-		      {
-		      	 chrome.tabs.executeScript(null, {code: 'Boxy.alert("Redfire Audio/Video not available!!")'});
-			 break;
-		      }
-                          
-                      var threadId = parameters.threadId;
-                      var thread = this._getThread(threadId);
-                      var firstParty = Strophe.getNodeFromJid(state.user.jid);
-                      var secondParty = Strophe.getNodeFromJid(thread.user.jid);
-                      var sessionId = Math.random().toString(36).substr(2,9);
-                      
-                      console.log("openVideo " + threadId);   
-                      
-            	      var host = features['xmpp']._connection.host;
-            	      var protocol = features['xmpp']._connection.protocol == "ws:" ? "http:" : "https:";
-            	      
-            	      if (thread.chatType == "chat")
-            	      {
-            	       	var url1 = chrome.extension.getURL("video/redfire_2way.html");
-            	       	var url2 = protocol + "//" + host + "/redfire/video/redfire_2way.html";
-            	       	var title = "Video Call " + secondParty;
-
-			var newUrl1 = url2 + "?key=" + sessionId + "&me=" + firstParty + "&you=" + secondParty;
-			var newUrl2 = url2 + "?key=" + sessionId + "&you=" + firstParty + "&me=" + secondParty;
-			
-			this._sendInvite(" is offering to share a video in this chat", thread.user.jid, newUrl2, "680", "520", "chat", "_video", sessionId, firstParty);            	       	
-            	       	this._openWindow("680", "500", newUrl1, title)
-            	       	
-            	      } else {
-
-            	       	var url1 = chrome.extension.getURL("video/redfire_video.html");   
-            	       	var url2 = protocol + "//" + host + "/redfire/video/redfire_video.html";            	       	   
-            	       	var title = "Video Conference Call "   + secondParty; 
-            	       	
-			var self = this;
-			var iq = $iq({type: 'get', to: thread.user.jid}).c('query', {xmlns: 'http://jabber.org/protocol/disco#items'});
-
- 			features['xmpp']._connection.sendIQ(iq, function(response)
-			{
-				var participants = [];
-				var others = "";
-				var $response = $(response);
-
-				$('item', response).each(function() 
-				{
-					var participant = Strophe.getResourceFromJid($(this).attr('jid'));
-					participants.push(participant);
-					
-					if (others == "")
-						others = participant;
-					else
-						others = others + "$" + participant;
-					
-				});
-				
-				var newUrl1 = url2 + "?key=" + sessionId + "&others=" + others + "&me=" + firstParty;
-				
-				$.each(participants, function(index, value) 
-				{ 
-					if (value != firstParty)
-					{
-						var newUrl2 = url2 + "?key=" + sessionId + "&others=" + others + "&me=" + value;
-						self._sendInvite(" is offering to share a video in this conference", thread.user.jid + "/" + value, newUrl2, "1084", "660", "groupchat", "_video", sessionId, firstParty);
-					}				  
-				});
-				
-           	       		self._openWindow("1044", "620", newUrl1, title);				
-			});            	       	
-            	      }            	      
-            	      
-                      break;   
+                                            
                       
                   case 'closeOldestThread':
                       // parameters.num
@@ -1193,21 +1155,7 @@ $.extend(state, {
 		chrome.tabs.executeScript(null, {code: code});        
         
         },
-        
-	_sendInvite: function(prompt, jid, url, width, height, roomType, windowType, sessionId, firstParty)
-	{
-		var msg = $msg({to: jid, type: "chat"}).c("body",{xmlns: Strophe.NS.CLIENT}).t(url);		                
-		var redfire = msg.up().c("redfire-invite", {xmlns: "http://redfire.4ng.net/xmlns/redfire-invite"});
-		redfire.c("sessionID").t(sessionId);
-		redfire.c("width").t(width);
-		redfire.c("height").t(height);
-		redfire.c("nickname").t(firstParty);
-		redfire.c("roomType").t(roomType);
-		redfire.c("prompt").t(prompt);
-		redfire.c("windowType").t(windowType);
-		features['xmpp']._connection.send(msg);        
-	},        
-        
+                
         _now: function(timestamp) {
             var now = new Date();
             if (timestamp) {

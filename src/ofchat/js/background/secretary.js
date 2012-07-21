@@ -3,7 +3,7 @@
  * @required strophe.js
  *
  */
- 
+
 var secretary = {};
 
 secretary._connection = null;
@@ -12,28 +12,12 @@ secretary._signingOut = false;  //??????
 
 secretary.active = false;  // Strophe?????????disconnected?timedout????????
 
-secretary._loadFeatures = function(parameters) {
-    var service = this._connection.domain;
-    var node = null;
-    var self = this;
-
-    this._connection.disco.discoverInfo(service, node, function(result) {
-        $(result).find('feature').each(function(index, element) {
-            var featureName = $(element).attr('var');
-            if (typeof(self._connection.disco.features) == 'undefined') {
-                self._connection.disco.features = [];
-            }
-
-            self._loadFeature(featureName);
-        });
-    }); 
-};
 
 secretary._loadFeature = function(featureName) {
     if (typeof(features[featureName]) !== 'undefined' && features[featureName].register) {
         features[featureName].register(this._connection, this);
     }
-}
+};
 
 secretary._connected = function() {
     for (index in features) {
@@ -128,8 +112,7 @@ secretary._connect = function(url, jid, password) {
                     // connected ??????
                     // ??xmpp????
                     self._loadFeature('xmpp');
-                    // ?????xmpp??
-                    self._loadFeatures();
+
 
                     self._connected();
                     break;
@@ -223,6 +206,7 @@ var features = {
 		
         register: function(connection, secretary) {
             this._connection = connection;
+            features['xmpp'].jingleCalls = {};
 
 	    console.log("registering..xmpp");	
 	    console.log("History threads = " + boss.options('HISTORY_THREADS'));
@@ -233,9 +217,13 @@ var features = {
 	    Strophe.addNamespace('DELAY', 'jabber:x:delay');
             Strophe.addNamespace('DISCO_ITEMS', "http://jabber.org/protocol/disco#items");
             Strophe.addNamespace('DISCO_INFO',  "http://jabber.org/protocol/disco#info");			
+
+   	    Strophe.addNamespace('JINGLE', "urn:xmpp:jingle:1");
+            Strophe.addNamespace('JINGLE_SESSION_INFO',"urn:xmpp:jingle:apps:rtp:1:info");
             
             secretary.addHandler('changePresence', this._changePresence);
             secretary.addHandler('send', this._send);
+            secretary.addHandler('getRoomJids', this._getRoomJids);
             secretary.addHandler('invite', this._invite);
             secretary.addHandler('acceptInvitation', this._acceptInvitation);
             secretary.addHandler('rejectInvitation', this._rejectInvitation);
@@ -244,8 +232,10 @@ var features = {
             this._connection.addHandler(this._presenceCallback, null, 'presence');
             this._connection.addHandler(this._rosterCallback, Strophe.NS.ROSTER, 'iq');
             this._connection.addHandler(this._bookmarksCallback, Strophe.NS.PRIVATE, 'iq');
-            
-        },
+      	    this._connection.addHandler(this._jingleCallback, Strophe.NS.JINGLE, "iq");      
+      	    this._connection.addHandler(this._discoInfoCallback, Strophe.NS.DISCO_INFO, "iq");        	    
+        },   
+   
         connected: function() {
             this._loadSignedInUser(Strophe.getBareJidFromJid(this._connection.jid));    
             this._loadContacts();              
@@ -256,6 +246,26 @@ var features = {
 	    var iq = $iq({to: this._connection.domain, type: 'get'}).c('query', {xmlns: Strophe.NS.PRIVATE}).c('storage', {xmlns: Strophe.NS.BOOKMARKS});	    	    
             this._connection.sendIQ(iq);           
 	},
+
+	_getRoomJids: function(parameters) {
+               
+		var iq = $iq({type: 'get', to: parameters.jid}).c('query', {xmlns: 'http://jabber.org/protocol/disco#items'});
+
+		this._connection.sendIQ(iq, function(response)
+		{
+			var $response = $(response);
+			var nicks = [];
+
+			$('item', response).each(function() 
+			{
+				nicks.push(Strophe.getResourceFromJid($(this).attr('jid')));
+			});
+
+			boss.report('returnRoomJids', {nicks: nicks, jid: parameters.jid, threadId: parameters.threadId});
+		});
+          
+	},
+		
 		
         _send: function(parameters) {
             //TODO
@@ -338,7 +348,7 @@ var features = {
                     
             boss.report('recieved', {from: from, html: true, threadId: threadId, type: "chat", message: "<font color='blue'>" + messageText + "</font>", jid: state.user.jid, time: time, timestamp: timestamp, newMsg: true});                
 	},
-
+	
         _openWindow: function(width, height, url, title) 
         {
 		var content = '<iframe width=' + width + ' height=' + height + ' frameborder=0 src=' + url + ' /></iframe>';
@@ -615,7 +625,7 @@ var features = {
                 
                 boss.log('Signed In');
                 
-                features.xmpp._autojoin();
+                features.xmpp._autojoin();                                      	  
             });
         },
 
@@ -624,22 +634,23 @@ var features = {
 		$('conference', msg).each(function() 
 		{		
 			var item = $(this);
+			var jid = item.attr('jid');			
+			var from = Strophe.getBareJidFromJid(jid);
+			var autojoin = item.attr('autojoin');
 
-			if(item.attr('autojoin') == "true") 
-			{
-				var jid = item.attr('jid');			
-				var from = Strophe.getBareJidFromJid(jid);				
-				
-				var contacts = {};
-				var name = item.attr('name');
-				var avatar = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAgACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6E+LPjLUNIuoPD2izLbaldQ+cbl4wwijyVG0EY3EgnJyBt5BzXkFl4k1u08YbLy6+1Xsrgx3vCyR/Lg5CDDD2469cZpnxy8ZWWs+O0l0XfjT4TZSTk7TK6yNu2jOCoPAPUlm7AZr/AApv7S5vr2+v42eUBMeYBuQfMDx2ydtfEZti5yru0tFt5Hv5c6Ps1H7TPVE8Ya3F5Miasblo2HmQSQJFvHocqCoPTNehaFr1vqllBdQnCzoHCsMEZHSvAvGWsW9rBPfwyiAIMI5HGTnHQ1u/BrxWNWsUUFUkt2Ecsa5wvGRjPPT9QR2r0OH8TWrSm5yvHpfv/kGa4JU6SqRjbuec+Ofhb4r0PWbtYbZryxHzQ3aFAsi5OAVLZDAAZGMdwTzXEWN7PpmpGVPkuomKvjg7u6ntkdK+5NasFvLZkPGVIrxXxl8INKu72a+imubaSQgsI9hUnjnDIcH6V9NleEweEqznUhzcys76o+XxVOpOzpys0eS/FLVtP1PxTJY6YJF0yNkjgkJMhb5Qd4Dcg5bp7YrqPgbZ3NhCLyVgTdRptUfwqC5HPvv6emKkf4WWqThpbm5mVT90xxKG9jhBXoHhDw99nMSLGkaJgAAYwOa7MS8K4xjh4W5fK33muGq4qMZxqTupWb9Uf//Z";
-				var presence = { type: state.PRESENCE_TYPE.CHAT,  message: state.PRESENCE_MESSAGE[state.PRESENCE_TYPE.CHAT]};
-				
-				contacts[jid] = {jid: jid, name: name, invited: false, rejected: false, presence: presence, avatar: avatar, room: true};
-				
-				boss.report('loadContacts', {contacts: contacts});				
-				
-				features.xmpp._connection.sendIQ($iq({type: 'get', from: state.user.jid, to: jid}).c('query', {xmlns: Strophe.NS.DISCO_INFO}));									
+			var contacts = {};
+			var name = item.attr('name');
+			var avatar = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAgACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6E+LPjLUNIuoPD2izLbaldQ+cbl4wwijyVG0EY3EgnJyBt5BzXkFl4k1u08YbLy6+1Xsrgx3vCyR/Lg5CDDD2469cZpnxy8ZWWs+O0l0XfjT4TZSTk7TK6yNu2jOCoPAPUlm7AZr/AApv7S5vr2+v42eUBMeYBuQfMDx2ydtfEZti5yru0tFt5Hv5c6Ps1H7TPVE8Ya3F5Miasblo2HmQSQJFvHocqCoPTNehaFr1vqllBdQnCzoHCsMEZHSvAvGWsW9rBPfwyiAIMI5HGTnHQ1u/BrxWNWsUUFUkt2Ecsa5wvGRjPPT9QR2r0OH8TWrSm5yvHpfv/kGa4JU6SqRjbuec+Ofhb4r0PWbtYbZryxHzQ3aFAsi5OAVLZDAAZGMdwTzXEWN7PpmpGVPkuomKvjg7u6ntkdK+5NasFvLZkPGVIrxXxl8INKu72a+imubaSQgsI9hUnjnDIcH6V9NleEweEqznUhzcys76o+XxVOpOzpys0eS/FLVtP1PxTJY6YJF0yNkjgkJMhb5Qd4Dcg5bp7YrqPgbZ3NhCLyVgTdRptUfwqC5HPvv6emKkf4WWqThpbm5mVT90xxKG9jhBXoHhDw99nMSLGkaJgAAYwOa7MS8K4xjh4W5fK33muGq4qMZxqTupWb9Uf//Z";
+			var presence = { type: state.PRESENCE_TYPE.CHAT,  message: state.PRESENCE_MESSAGE[state.PRESENCE_TYPE.CHAT]};
+
+			contacts[jid] = {jid: jid, name: name, invited: false, rejected: false, presence: presence, avatar: avatar, room: true, autojoin: autojoin};
+
+			boss.report('loadContacts', {contacts: contacts});				
+
+			features.xmpp._connection.sendIQ($iq({type: 'get', from: state.user.jid, to: jid}).c('query', {xmlns: Strophe.NS.DISCO_INFO}));									
+			
+			if (autojoin == "true") 
+			{			
 				features.xmpp._connection.muc.join(jid, Strophe.getNodeFromJid(state.user.jid));							
 			}
 		});
@@ -655,6 +666,126 @@ var features = {
 
 	    return true;
         },
+
+
+        _discoInfoCallback: function(iq) {    
+
+	     var iqType = $(iq).attr('type');	     
+	     if (iqType == "result") return true;
+	     
+	     console.log("_discoInfoCallback");  
+	     console.log(iq);
+	     
+	     var from = $(iq).attr('from');
+	     var id =  $(iq).attr('id');
+
+	      var responseIq = $iq({type: 'result', from: state.user.jid, to: from, id: id}).c('query', {xmlns: Strophe.NS.DISCO_INFO})    	    
+	      	.c("feature", {var: "urn:xmpp:jingle:1"}).up()
+	      	.c("feature", {var: "urn:xmpp:jingle:transports:ice-udp:0"}).up()
+	      	.c("feature", {var: "urn:xmpp:jingle:transports:ice-udp:1"}).up()
+	      	.c("feature", {var: "urn:xmpp:jingle:apps:rtp:1"}).up()
+	      	.c("feature", {var: "urn:xmpp:jingle:apps:rtp:audio"}).up()
+	      	.c("feature", {var: "urn:xmpp:jingle:apps:rtp:video"}).up()
+	      	
+             features.xmpp._connection.sendIQ(responseIq); 	
+	     
+	     return true;
+	},
+	
+        _jingleCallback: function(iq) {    
+
+	     console.log("_jingleCallback");  
+	     console.log(iq);  
+
+             var time = features['xmpp']._now();
+             var timestamp = features['xmpp']._now(true); 
+             	
+	     var iqType = $(iq).attr('type');
+	     
+	     if (iqType == "result") return true;
+	     	     
+	     var jingle = $(iq).find('jingle');
+	     
+	     var action = jingle.attr('action') || "";	     
+	     var id = jingle.attr('sid') || "";	
+	     var initiator = jingle.attr('initiator');
+ 
+	     var from = $(iq).attr('from');
+	     var fromThread = Strophe.getBareJidFromJid(from);
+	     var fromNode = Strophe.getNodeFromJid(from);
+ 	     var threadId = $.md5(fromThread.toLowerCase()); // getThreadId;	
+ 	     
+ 	     var chatType = state.user.contacts[fromThread].room ? "groupchat" : "chat";  	     
+ 	     var name = state.user.contacts[fromThread].name
+
+	     var reason = "";
+	     var sdp = null;
+	     var media = {audio: false, video:false};
+
+	     if (action == "session-terminate")
+	     {
+	     	reason = "<font color=red>Call is terminated</font>";
+	     	
+		if ($(iq).find('decline'))
+		{
+			reason = "<font color=red>Call is rejected</font>";		
+		}
+
+	     } else if (action == "session-initiate" || action == "session-accept")   {  	           		
+      		
+                $(jingle).find('webrtc').each(function() {
+                
+                	sdp = $(this).text();
+                	media.audio = sdp.indexOf("m=audio") > -1; 
+                	media.video = sdp.indexOf("m=video") > -1;                 	
+                	
+	     		console.log("_jingleCallback SDP \n" + sdp);                 	
+                });
+	     }
+
+	     if (iqType == "error")
+	     {
+	     	boss.report('recieved', {from: fromThread, threadId: threadId, type: "chat", message: "<font color=red>JingleCall Unavailable</font>", html: true, jid: from, time: time, timestamp: timestamp, newMsg: true});	     	     
+	     	
+	     } else {
+	     
+	     	if ((sdp != null && (action == "session-initiate" || action == "session-accept")) || action == "session-terminate" || action == "session-info")
+	     	{
+	     		console.log("sending SDP to foreground");  
+	     		
+			boss.report('jingleEvent', {jingleRequest: action, id: id, from: from, threadId: threadId, initiator: initiator, sdp: sdp, reason: reason, chatType: chatType, name: name, media: media});         
+
+			if (action == "session-initiate")
+			{    
+			    boss.report('recieved', {from: fromThread, threadId: threadId, type: "chat", message: "<font color=red>Close this panel to terminate call</font>", html: true, jid: from, time: time, timestamp: timestamp, newMsg: true});	     	     			
+			
+			    //var prompt = '<div id="gtalklet_video_' + id + '">' + (media.audio ? 'Audio ' : '')  + (media.video ? 'Video ' : '')  + 'chat? <a class="gtalklet_message_link gtalklet_video_ok" href="javascript:" data-jid="' + from + '" title="Accept">Accept</a><br/><a class="gtalklet_message_link gtalklet_video_no" href="javascript:" data-jid=' + from + ' title="Reject">Terminate</a></div>';             
+			    //boss.report('recieved', {from: fromThread, threadId: threadId, type: "chat", message: prompt, html: true, jid: from, time: time, timestamp: timestamp, newMsg: true});	     
+			}
+			
+			if (action == "session-accept")
+			{ 
+				boss.report('recieved', {from: fromThread, threadId: threadId, type: "chat", message: "<font color=red>Call is accepted</font>", html: true, jid: from, time: time, timestamp: timestamp, newMsg: true});	     	     			
+			
+			}
+
+			if (action == "session-info")
+			{ 
+				boss.report('recieved', {from: fromThread, threadId: threadId, type: "chat", message: "<font color=red>Call is ringing</font>", html: true, jid: from, time: time, timestamp: timestamp, newMsg: true});	     	     			
+			
+			}
+			
+			if (action == "session-terminate")
+			{ 
+				boss.report('recieved', {from: fromThread, threadId: threadId, type: "chat", message: reason, html: true, jid: from, time: time, timestamp: timestamp, newMsg: true});	     	     			
+			}			
+		
+		} else 	boss.report('recieved', {from: fromThread, threadId: threadId, type: "chat", message: "<font color=red>Call is unavailable</font>", html: true, jid: from, time: time, timestamp: timestamp, newMsg: true});	     	     
+	     }
+	     
+	     return true; 		
+        },
+        
         
         _messageCallback: function(message) {
 
@@ -706,7 +837,6 @@ var features = {
             }
             
             var $invite = $message.find('invite');
-            var videoInvite = $message.children('redfire-invite');
 
             if (false && $invite) 
             {
@@ -715,23 +845,6 @@ var features = {
             	var invitedFrom = Strophe.getBareJidFromJid($invite.attr('from')).toLowerCase();
                 var reason = $invite.find('reason').text();
                 boss.report('recievedGroupChatInvitation', {from: invitedFrom, chatroom: from, reason: reason});
-
-	    } else if (type != "error" && videoInvite.length > 0) {
-	    	    
-		var prompt = $message.find('prompt').text();		
-		var nickname = $message.find("nickname").text();
-		var width = $message.find("width").text();
-		var height = $message.find("height").text();
-		var url = $message.find('body').text();		
-		var windowType = $message.find("windowType").text();
-		var roomType = $message.find("roomType").text();
-
-		var title = roomType == "chat" ? "Video call with " + nickname : "Video conference call in " + Strophe.getNodeFromJid(jid);
-		var content = '<iframe width=' + width + ' height=' + height + ' frameborder=0 src=' + url + ' /></iframe>';
-		var acceptCode = "if (videoPanel != null) videoPanel.hide(); var videoPanel = new Boxy('" + content + "', {title: '" + title + "', show: true, draggable: true, unloadOnHide: true});";
-		var confirmCode = "Boxy.confirm('" + nickname + prompt + "', function() {" +  acceptCode + " });"
-		chrome.tabs.executeScript(null, {code: confirmCode}); 
-					
                         
             } else {
                 // normal chat message
@@ -772,7 +885,7 @@ var features = {
                     var messageText = from + ' wants to add you as a friend. Add as a friend? <a class="gtalklet_message_link gtalklet_invited_ok" href="javascript:" data-jid="' + from + '" title="Accept">Yes</a> | <a class="gtalklet_message_link gtalklet_invited_no" href="javascript:" data-jid=' + from + ' title="Reject">No</a>'; //?
 
                     boss.report('recieved', {from: from, threadId: threadId, type: type, message: messageText, html: true, jid: $presence.attr('from'), time: time, timestamp: timestamp, newMsg: true});
-                    boss.report('disableThread', {threadId: threadId});
+                    //boss.report('disableThread', {threadId: threadId});
                 case 'subscribed':
                     // ???????????
                     var jid = from;
