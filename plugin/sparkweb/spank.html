@@ -1,0 +1,266 @@
+<html>
+<head>
+<title>Spank Javascript XMPP API Demo</title>
+<script language="JavaScript" src="chat/javascript/sparkweb.js" type="text/javascript"></script>
+<script language="JavaScript" src="chat/javascript/xmpp-ws.js" type="text/javascript"></script>
+
+<script language="JavaScript">
+	var loginName, ocsName, loginPassword, myJID;
+	var connection, rosterManager, presenceManager, chatManager, chatSessionListener, mucManager, discoManager;
+	var domain = window.location.hostname;
+
+
+	function getParameter(string, parm, delim) {
+
+		 if (string.length == 0) {
+			return '';
+		 }
+
+		 var sPos = string.indexOf(parm + "=");
+
+		 if (sPos == -1) {return '';}
+
+		 sPos = sPos + parm.length + 1;
+		 var ePos = string.indexOf(delim, sPos);
+
+		 if (ePos == -1) {
+			ePos = string.length;
+		 }
+
+		 return unescape(string.substring(sPos, ePos));
+	}
+
+	function getPageParameter(parameterName, defaultValue) {
+
+		var s = self.location.search;
+
+		if ((s == null) || (s.length < 1)) {
+			return defaultValue;
+		}
+
+		s = getParameter(s, parameterName, '&');
+
+		if ((s == null) || (s.length < 1)) {
+			s = defaultValue;
+		}
+
+		return s;
+	}
+
+	function demoLogin()
+	{
+		loginName = getPageParameter('username', 'florence.olajide');
+		loginPassword = getPageParameter('password', 'changeme');
+		domain = getPageParameter('domain', domain);
+
+		myJID = loginName + "@" + domain;
+		ocsName = "dele.olajide@" + domain;
+
+		connection = new XMPPConnection("/http-bind/", window.location.hostname, new MyConnectionListener(loginName, loginPassword));
+		connection.connect();
+
+	}
+
+    function demoLogoff()
+    {
+		var presence = new XMPP.Presence();
+		presence.setType("unavailable");
+		connection.logout(presence);
+    }
+
+
+	function myRosterHandler()
+	{
+		var rosterObj = rosterManager.getRoster()
+
+		for (var groupName in rosterObj) {
+		    var groupObj = rosterObj[groupName];
+
+		    log("Group - " + groupName);
+
+				for (var userJID in groupObj) {
+					var userObj = groupObj[userJID];
+					log("User - " + userObj.getJID().toString());
+				}
+
+		}
+	}
+
+
+	function myPresenceHandler(myPresence)
+	{
+		//alert(myPresence.toXML());
+	}
+
+
+	MyRosterListener = function()
+	{
+
+	}
+
+	MyRosterListener.prototype.onAdded = function(added)
+	{
+
+		for (var i=0; i < added.length; i++)
+		{
+			Alert(added[i].getJID().toString())
+		}
+	}
+
+
+	MyRosterListener.prototype.onRemoved = function(removed)
+	{
+		for (var i=0; i < removed.length; i++)
+		{
+			Alert(removed[i].getJID().toString())
+		}
+	}
+
+
+	MyRosterListener.prototype.onUpdated = function(updated)
+	{
+		for (var i=0; i < updated.length; i++)
+		{
+			Alert(updated[i].getJID().toString())
+		}
+	}
+
+
+	MyConnectionListener = function(username, password) {
+    		this.username = username;
+    		this.password = password;
+	}
+
+	MyConnectionListener.prototype.connectionSuccessful = function(connection)
+	{
+		chatManager = new org.jive.spank.chat.Manager(connection);
+		chatSessionListener = new org.jive.spank.chat.ChatSessionListener(chatSessionCreated, chatSessionClosed);
+		chatManager.addChatSessionListener(chatSessionListener);
+		mucManager = new org.jive.spank.muc.Manager(connection, chatManager);
+		discoManager = new org.jive.spank.disco.Manager(connection);
+
+		connection.login(this.username, this.password, "websocket");
+	}
+
+	function chatSessionClosed(manager, session) {
+		alert("Chat session closed.");
+	}
+
+	function chatSessionCreated(manager, session) {
+		alert("Chat session created.");
+		session.addListener(new MyMessageListener());
+	}
+
+	MyConnectionListener.prototype.connectionFailed =  function()
+	{
+		alert("XMPP Connection failed");
+	}
+
+
+	MyConnectionListener.prototype.connectionClosed = function(closedConnection, error)
+	{
+		this.cleanUp(closedConnection, error);
+
+		if (error) {
+			alert("Your connection to the server has closed, unexpectedly");
+		}
+		else {
+
+		}
+
+
+	}
+
+	MyConnectionListener.prototype.cleanUp = function(closedConnection, error)
+	{
+		alert("XMPP Connection closed");
+	}
+
+
+	MyConnectionListener.prototype.authenticationSuccessful = function(connection)
+	{
+		presenceManager = new org.jive.spank.presence.Manager(connection, null, "accept");
+		presenceManager.addPresenceListener(myPresenceHandler);
+		presenceManager.sendPresence();
+
+		rosterManager = new org.jive.spank.roster.Manager(connection, myRosterHandler, presenceManager);
+		rosterManager.addRosterListener(new MyRosterListener());
+
+		setTimeout(doServiceDiscovery, 1000)
+
+	}
+
+	MyConnectionListener.prototype.authenticationFailed = function(failedConnection, error)
+	{
+		this.cleanUp(failedConnection, error);
+	}
+
+	MyConnectionListener.prototype.packetsReceived = function()
+	{
+
+	}
+
+	MyConnectionListener.prototype.packetsProcessed = function()
+	{
+
+	}
+
+	MyMessageListener = function() {
+
+	}
+
+
+	MyMessageListener.prototype.messageRecieved =  function(session, message) {
+
+		if (!message.getBody() || message.getBody().body == "") {
+			return;
+		}
+
+		session.sendMessage("Echo - " + message.getBody().body);
+	}
+
+
+
+
+	function doServiceDiscovery() {
+
+		discoManager.discoverInfo(discoInfoHandler, new XMPP.JID(ocsName));
+
+	}
+
+
+	function discoInfoHandler(packet) {
+
+		document.getElementById('log').innerText =  packet.toXML()
+		discoManager.discoverItems(discoItemsHandler, new XMPP.JID(ocsName), "http://jabber.org/protocol/commands");
+	}
+
+
+	function discoItemsHandler(packet) {
+		document.getElementById('log').innerText =  packet.toXML()
+	}
+
+
+</script>
+
+<style type="text/css">
+
+
+</style>
+</head>
+<body topmargin="0" leftmargin="0" onLoad="demoLogin();" onUnload="demoLogoff();">
+<form id="openlinkForm" >
+<table>
+	<tr valign='top'>
+		<td width="50%">
+			<table>
+				<tr>
+					<td><div id="log"></div></td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+</table>
+</form>
+</body>
+</html>

@@ -999,7 +999,7 @@ action = {
 			
 			if (this._myVideoPanel != null) this._myVideoPanel.remove(); 
 
-			if (call.callType.video == true)
+			if (callType.video == true)
 			{
 				_myVideoPanel = new Boxy(content, {
 					title: _myName, 

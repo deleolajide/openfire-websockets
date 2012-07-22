@@ -3,22 +3,6 @@
   
   <display-name>WebSockets</display-name>
   <description>WebSockets for Openlink</description>
-
-   <servlet>
-	<servlet-name>WebSocketsMainServlet</servlet-name>
-	<servlet-class>com.ifsoft.websockets.servlet.WebSocketsMainServlet</servlet-class>
-	<load-on-startup>0</load-on-startup>
-   </servlet>   
-
-   <servlet>
-      <servlet-name>XMPPServlet</servlet-name>
-     <servlet-class>com.ifsoft.websockets.servlet.XMPPServlet</servlet-class>
-   </servlet>
-
-   <servlet-mapping>
-      <servlet-name>XMPPServlet</servlet-name>
-      <url-pattern>/server</url-pattern>
-   </servlet-mapping>
    
   <welcome-file-list>
     <welcome-file>index.html</welcome-file>
