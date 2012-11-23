@@ -299,19 +299,26 @@ public final class XMPPServlet extends WebSocketServlet
  			// assign a router for the connection to use which has a reference to the session
  			wsConnection.setRouter( new SessionPacketRouter( session ) );
 
- 			AuthToken authToken;
- 			try {
- 				authToken = AuthFactory.authenticate( username, password );
- 			} catch ( UnauthorizedException e ) {
- 				Log.error( "An error occurred while attempting to create a web socket (USERNAME: " + username + " PASSWORD: " + password + " RESOURCE: " + resource + " ) : ", e );
- 				return null;
- 			} catch ( Exception e ) {
- 				Log.error( "An error occurred while attempting to create a web socket : ", e );
- 				return null;
- 			}
+			AuthToken authToken;
 
- 			session.setAuthToken(authToken, resource);
- 			// assign session to web socket
+			if (username.equals("null") && password.equals("null"))
+			{
+				authToken = new AuthToken(resource, true);
+
+			} else {
+
+				try {
+					authToken = AuthFactory.authenticate( username, password );
+				} catch ( UnauthorizedException e ) {
+					Log.error( "An error occurred while attempting to create a web socket (USERNAME: " + username + " PASSWORD: " + password + " RESOURCE: " + resource + " ) : ", e );
+					return null;
+				} catch ( Exception e ) {
+					Log.error( "An error occurred while attempting to create a web socket : ", e );
+					return null;
+				}
+			}
+
+			session.setAuthToken(authToken, resource);
  			socket.setSession( session );
 
  			Log.debug( "Created new socket for digest " + digest );

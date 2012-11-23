@@ -5,7 +5,7 @@
     <name>WebSockets Plugin</name>
     <description>WebSockets Plugin for Openfire</description>
     <author>Ignite Realtime Community</author>
-    <version>0.0.0.2</version>
+    <version>0.0.0.4</version>
     <minServerVersion>3.7.2</minServerVersion> 
 
 

@@ -2,7 +2,6 @@ Buildfile: build.xml
 
 clean:
    [delete] Deleting directory G:\Projects-Current\websockets\build\classes\com
-   [delete] Deleting: D:\Work\Projects\2010.04.21-iTrader\Workspace\openfire_3_7_0\target\openfire\plugins\websockets.war
 
 init:
 
@@ -33,4 +32,4 @@ war:
       [jar] Building jar: D:\Work\Projects\2010.04.21-iTrader\Workspace\openfire_3_7_0\target\openfire\plugins\websockets.war
 
 BUILD SUCCESSFUL
-Total time: 10 seconds
+Total time: 7 seconds
