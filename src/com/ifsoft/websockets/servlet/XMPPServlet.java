@@ -32,6 +32,10 @@ import org.jivesoftware.openfire.net.VirtualConnection;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.auth.AuthToken;
 import org.jivesoftware.openfire.auth.AuthFactory;
+import org.jivesoftware.openfire.user.User;
+import org.jivesoftware.openfire.user.UserAlreadyExistsException;
+import org.jivesoftware.openfire.user.UserManager;
+import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.openfire.SessionPacketRouter;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.database.SequenceManager;
@@ -74,18 +78,19 @@ public final class XMPPServlet extends WebSocketServlet
 
     public boolean checkOrigin(HttpServletRequest request, String origin)
     {
-    	String username = URLDecoder.decode( ParamUtils.getParameter(request, "username") );
-		String password = ParamUtils.getParameter(request, "password");
-		String resource = ParamUtils.getParameter(request, "resource");
+    	String username = URLDecoder.decode( ParamUtils.getParameter(request, "username"));
+		String password = URLDecoder.decode( ParamUtils.getParameter(request, "password"));
+		String resource = URLDecoder.decode( ParamUtils.getParameter(request, "resource"));
+		String register = ParamUtils.getParameter(request, "register");
 
 		// escape node from username
 		username = JID.escapeNode( username );
 
 		// make sure to pass the resource as part of the digest
 		String digest = getMD5( username + password + resource );
-		Log.debug( "checkOrigin: Digest created for " + username + " : " + password + " : " + resource + " = " + digest );
+		Log.debug( "checkOrigin: Digest created for " + username + " : " + resource + " = " + digest );
 
-		if ( xmppConnect( username, password, resource, request ) == null ) {
+		if ( xmppConnect( username, password, resource, register, request ) == null ) {
 			return false;
 		} else {
 			return true;
@@ -103,15 +108,16 @@ public final class XMPPServlet extends WebSocketServlet
 		}
 		*/
 
-		String username = URLDecoder.decode( ParamUtils.getParameter(request, "username") );
-		String password = ParamUtils.getParameter(request, "password");
-		String resource = ParamUtils.getParameter(request, "resource");
+		String username = URLDecoder.decode( ParamUtils.getParameter(request, "username"));
+		String password = URLDecoder.decode( ParamUtils.getParameter(request, "password"));
+		String resource = URLDecoder.decode( ParamUtils.getParameter(request, "resource"));
+		String register = ParamUtils.getParameter(request, "register");
 
 		// escape node from username
 		username = JID.escapeNode( username );
 
-		XMPPWebSocket socket = xmppConnect( username, password, resource, request );
-		Log.debug( socket.getDigest() + " : doWebSocketConnect : Digest created for " + username + " : " + password + " : " + resource );
+		XMPPWebSocket socket = xmppConnect( username, password, resource, register, request );
+		Log.debug( socket.getDigest() + " : doWebSocketConnect : Digest created for " + username + " : " + resource );
 
 		try {
 			// return the socket that has been stored in cache
@@ -227,7 +233,7 @@ public final class XMPPServlet extends WebSocketServlet
             Log.debug( digest + " : disconnect : XMPPWebSocket disconnect");
             Log.debug( "Total websockets created : " + sockets.size() );
             try {
-            	if (conn.isOpen())
+            	if (conn != null && conn.isOpen())
 	            {
 	                conn.disconnect();
 	            }
@@ -249,12 +255,12 @@ public final class XMPPServlet extends WebSocketServlet
     // XMPPConnect
     //
     // ------------------------------------------------------------------------
-	private XMPPWebSocket xmppConnect(String username, String password, String resource, HttpServletRequest request)
+	private XMPPWebSocket xmppConnect(String username, String password, String resource, String register, HttpServletRequest request)
     {
 
     	// make sure to pass the resource as part of the digest
  		String digest = getMD5( username + password + resource );
- 		Log.debug( digest + " : doWebSocketConnect : Digest created for " + username + " : " + password + " : " + resource );
+ 		Log.debug( digest + " : doWebSocketConnect : Digest created for " + username + " : " + resource + " : " + register );
 
  		XMPPWebSocket socket;
 
@@ -294,37 +300,71 @@ public final class XMPPServlet extends WebSocketServlet
  			// assign the websocket to the connection
  			wsConnection.setSocket( socket );
 
- 			// create a new session and assign the connection to it
- 			LocalClientSession session = SessionManager.getInstance().createClientSession( wsConnection, new BasicStreamID("url" + System.currentTimeMillis() ) );
- 			// assign a router for the connection to use which has a reference to the session
- 			wsConnection.setRouter( new SessionPacketRouter( session ) );
+			// test for existing session and re-use authentication otherwise create new session and authenicate
 
+			LocalClientSession session;
 			AuthToken authToken;
 
-			if (username.equals("null") && password.equals("null"))
-			{
-				authToken = new AuthToken(resource, true);
+			try {
+				session = (LocalClientSession) SessionManager.getInstance().getSession(new JID(JID.escapeNode(username) + "@" + JiveGlobals.getProperty("xmpp.domain") + "/" + resource));
 
-			} else {
+				if (session != null)
+				{
+					session.close();
+					session = SessionManager.getInstance().createClientSession( wsConnection, new BasicStreamID("url" + System.currentTimeMillis() ) );
+					wsConnection.setRouter( new SessionPacketRouter( session ) );
+					authToken = new AuthToken(username);
 
-				try {
-					authToken = AuthFactory.authenticate( username, password );
-				} catch ( UnauthorizedException e ) {
-					Log.error( "An error occurred while attempting to create a web socket (USERNAME: " + username + " PASSWORD: " + password + " RESOURCE: " + resource + " ) : ", e );
-					return null;
-				} catch ( Exception e ) {
-					Log.error( "An error occurred while attempting to create a web socket : ", e );
-					return null;
+				} else {
+
+					session = SessionManager.getInstance().createClientSession( wsConnection, new BasicStreamID("url" + System.currentTimeMillis() ) );
+					wsConnection.setRouter( new SessionPacketRouter( session ) );
+
+					if (username.equals("null") && password.equals("null"))	// anonymous user
+					{
+						authToken = new AuthToken(resource, true);
+
+					} else {
+
+						try {
+							String userName = JID.unescapeNode(username);
+
+							if (register != null && register.equals("true"))	// if register, create new user
+							{
+								UserManager userManager = XMPPServer.getInstance().getUserManager();
+
+								try {
+									userManager.getUser(userName);
+								}
+								catch (UserNotFoundException e) {
+									userManager.createUser(userName, password, null, null);
+								}
+							}
+
+							authToken = AuthFactory.authenticate( userName, password );
+						} catch ( UnauthorizedException e ) {
+							Log.error( "An error occurred while attempting to create a web socket (USERNAME: " + username + " RESOURCE: " + resource + " ) : ", e );
+							return null;
+						} catch ( Exception e ) {
+							Log.error( "An error occurred while attempting to create a web socket : ", e );
+							return null;
+						}
+					}
 				}
+
+				session.setAuthToken(authToken, resource);
+				socket.setSession( session );
+			}
+			catch (Exception e1) {
+				Log.error( "An error occurred while attempting to create a new socket " + e1);
+				return null;
 			}
 
-			session.setAuthToken(authToken, resource);
- 			socket.setSession( session );
+			Log.debug( "Created new socket for digest " + digest );
+			Log.debug( "Total websockets created : " + sockets.size() );
 
- 			Log.debug( "Created new socket for digest " + digest );
- 			Log.debug( "Total websockets created : " + sockets.size() );
  		} catch ( Exception e ) {
- 			Log.error( "An error occurred while attempting to create a new socket" );
+ 			Log.error( "An error occurred while attempting to create a new socket " + e);
  			return null;
  		}
 

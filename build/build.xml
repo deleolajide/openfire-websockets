@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="WebSocketsPlugin" default="war">
 	<description>WebSockets Plugin Build</description>
-	<!--property name="openfire.home" value="D:\Work\Projects\2010.04.21-iTrader\Workspace\openfire_3_6_4\target\openfire" /-->
-	<property name="openfire.home" value="D:\Work\Projects\2010.04.21-iTrader\Workspace\openfire_3_7_0\target\openfire" />
+	<property name="openfire.home" value="C:\Work\Projects\2010.04.21-iTrader\Workspace\openfire_3_8_1\target\openfire" />
 	
-	<property name="WebSocketsPlugin.dir" value="G:\Projects-Current\websockets" />
+	<property name="WebSocketsPlugin.dir" value="C:\Projects\websockets" />
 
 	<path id="build.classpath">
 		<fileset dir="${WebSocketsPlugin.dir}\plugin\WEB-INF\lib" includes="*.jar"/>

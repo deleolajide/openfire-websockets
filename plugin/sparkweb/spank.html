@@ -1,13 +1,18 @@
-<html manifest="site.manifest">
+<html>
 <head>
-<title>Spank Javascript XMPP API Demo</title>
-<script language="JavaScript" src="chat/javascript/sparkweb.js" type="text/javascript"></script>
-<script language="JavaScript" src="chat/javascript/xmpp-ws.js" type="text/javascript"></script>
+<title>Openlink Demo</title>
+<script language="JavaScript" src="/ws/sparkweb/chat/javascript/thirdparty.js" type="text/javascript"></script>
+<script language="JavaScript" src="/ws/sparkweb/chat/javascript/xmpp-ws.js" type="text/javascript"></script>
+<script language="JavaScript" src="/ws/sparkweb/chat/javascript/spank.js" type="text/javascript"></script>
+
+
 
 <script language="JavaScript">
-	var loginName, ocsName, loginPassword, myJID;
+	var loginName, loginPassword, myJID;
 	var connection, rosterManager, presenceManager, chatManager, chatSessionListener, mucManager, discoManager;
 	var domain = window.location.hostname;
+
+    var sparkweb = {};
 
 
 	function getParameter(string, parm, delim) {
@@ -47,22 +52,25 @@
 		return s;
 	}
 
-	function demoLogin()
+	function spankLogin()
 	{
-		loginName = getPageParameter('username', 'florence.olajide');
+		console.log("spankLogin");
+
+		loginName = getPageParameter('username', 'admin');
 		loginPassword = getPageParameter('password', 'changeme');
 		domain = getPageParameter('domain', domain);
 
 		myJID = loginName + "@" + domain;
-		ocsName = "dele.olajide@" + domain;
 
 		connection = new XMPPConnection("/http-bind/", window.location.hostname, new MyConnectionListener(loginName, loginPassword));
 		connection.connect();
 
 	}
 
-    function demoLogoff()
+    function spankLogoff()
     {
+		console.log("spankLogoff");
+
 		var presence = new XMPP.Presence();
 		presence.setType("unavailable");
 		connection.logout(presence);
@@ -71,16 +79,18 @@
 
 	function myRosterHandler()
 	{
+		console.log("myRosterHandler");
+
 		var rosterObj = rosterManager.getRoster()
 
 		for (var groupName in rosterObj) {
 		    var groupObj = rosterObj[groupName];
 
-		    log("Group - " + groupName);
+		    console.log("Group - " + groupName);
 
 				for (var userJID in groupObj) {
 					var userObj = groupObj[userJID];
-					log("User - " + userObj.getJID().toString());
+					console.log("User - " + userObj.getJID().toString());
 				}
 
 		}
@@ -89,7 +99,8 @@
 
 	function myPresenceHandler(myPresence)
 	{
-		//alert(myPresence.toXML());
+		console.log("myPresenceHandler");
+		console.log(myPresence.toXML());
 	}
 
 
@@ -100,60 +111,70 @@
 
 	MyRosterListener.prototype.onAdded = function(added)
 	{
+		console.log("MyRosterListener onAdded");
 
 		for (var i=0; i < added.length; i++)
 		{
-			Alert(added[i].getJID().toString())
+			console.log(added[i].getJID().toString())
 		}
 	}
 
 
 	MyRosterListener.prototype.onRemoved = function(removed)
 	{
+		console.log("MyRosterListener onRemoved");
+
 		for (var i=0; i < removed.length; i++)
 		{
-			Alert(removed[i].getJID().toString())
+			console.log(removed[i].getJID().toString())
 		}
 	}
 
 
 	MyRosterListener.prototype.onUpdated = function(updated)
 	{
+		console.log("MyRosterListener onUpdated");
+
 		for (var i=0; i < updated.length; i++)
 		{
-			Alert(updated[i].getJID().toString())
+			console.log(updated[i].getJID().toString())
 		}
 	}
 
 
-	MyConnectionListener = function(username, password) {
-    		this.username = username;
-    		this.password = password;
+	MyConnectionListener = function(username, password)
+	{
+		console.log("MyConnectionListener");
+
+		this.username = username;
+		this.password = password;
 	}
 
 	MyConnectionListener.prototype.connectionSuccessful = function(connection)
 	{
+		console.log("MyConnectionListener connectionSuccessful");
+
 		chatManager = new org.jive.spank.chat.Manager(connection);
 		chatSessionListener = new org.jive.spank.chat.ChatSessionListener(chatSessionCreated, chatSessionClosed);
 		chatManager.addChatSessionListener(chatSessionListener);
 		mucManager = new org.jive.spank.muc.Manager(connection, chatManager);
 		discoManager = new org.jive.spank.disco.Manager(connection);
 
-		connection.login(this.username, this.password, "websocket");
+		connection.login(this.username, this.password, "spank demo");
 	}
 
 	function chatSessionClosed(manager, session) {
-		alert("Chat session closed.");
+		console.log("Chat session closed.");
 	}
 
 	function chatSessionCreated(manager, session) {
-		alert("Chat session created.");
+		console.log("Chat session created.");
 		session.addListener(new MyMessageListener());
 	}
 
 	MyConnectionListener.prototype.connectionFailed =  function()
 	{
-		alert("XMPP Connection failed");
+		console.log("XMPP Connection failed");
 	}
 
 
@@ -162,7 +183,7 @@
 		this.cleanUp(closedConnection, error);
 
 		if (error) {
-			alert("Your connection to the server has closed, unexpectedly");
+			console.log("Your connection to the server has closed, unexpectedly");
 		}
 		else {
 
@@ -173,7 +194,7 @@
 
 	MyConnectionListener.prototype.cleanUp = function(closedConnection, error)
 	{
-		alert("XMPP Connection closed");
+		console.log("XMPP Connection closed");
 	}
 
 
@@ -224,7 +245,7 @@
 
 	function doServiceDiscovery() {
 
-		discoManager.discoverInfo(discoInfoHandler, new XMPP.JID(ocsName));
+		discoManager.discoverInfo(discoInfoHandler, new XMPP.JID("relay." + domain));
 
 	}
 
@@ -232,14 +253,14 @@
 	function discoInfoHandler(packet) {
 
 		document.getElementById('log').innerText =  packet.toXML()
-		discoManager.discoverItems(discoItemsHandler, new XMPP.JID(ocsName), "http://jabber.org/protocol/commands");
+		//discoManager.discoverItems(discoItemsHandler, new XMPP.JID("relay." + domain));
 	}
 
 
-	function discoItemsHandler(packet) {
-		document.getElementById('log').innerText =  packet.toXML()
+	function discoItemsHandler(packet)
+	{
+		document.getElementById('log').innerText = packet.toXML()
 	}
-
 
 </script>
 
@@ -248,8 +269,7 @@
 
 </style>
 </head>
-<body topmargin="0" leftmargin="0" onLoad="demoLogin();" onUnload="demoLogoff();">
-<form id="openlinkForm" >
+<body topmargin="0" leftmargin="0" onLoad="spankLogin();" onUnload="spankLogoff();">
 <table>
 	<tr valign='top'>
 		<td width="50%">
@@ -261,6 +281,5 @@
 		</td>
 	</tr>
 </table>
-</form>
 </body>
 </html>

@@ -4,7 +4,11 @@ CACHE MANIFEST
 CACHE:
 index.html
 chat/javascript/sparkweb.js
+chat/javascript/spank.js
 chat/javascript/xmpp-ws.js
+chat/javascript/xmpp-bosh.js
+chat/javascript/thirdparty.js
+chat/javascript/yui.js
 chat/style/basic-dialog.css
 chat/style/grid.css
 chat/style/layout.css
@@ -14,6 +18,7 @@ chat/style/tabs.css
 chat/style/toolbar.css
 chat/style/login.css
 chat/style/spank.css
+
 chat/images/login/logo_SparkWeb-small.gif
 chat/images/login/anim-loading.gif
 chat/images/login/logo_SparkWeb-large.gif
