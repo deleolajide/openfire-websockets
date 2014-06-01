@@ -2,48 +2,19 @@ Buildfile: C:\Projects\websockets\build\build.xml
 
 clean:
    [delete] Deleting directory C:\Projects\websockets\build\classes\com
-   [delete] Deleting: C:\Work\Projects\2010.04.21-iTrader\Workspace\openfire_3_8_1\target\openfire\plugins\websockets.war
 
 init:
 
 compile:
     [javac] C:\Projects\websockets\build\build.xml:26: warning: 'includeantruntime' was not set, defaulting to build.sysclasspath=last; set to false for repeatable builds
     [javac] Compiling 5 source files to C:\Projects\websockets\build\classes
-    [javac] C:\Projects\websockets\src\com\ifsoft\websockets\servlet\XMPPServlet.java:81: warning: [deprecation] decode(java.lang.String) in java.net.URLDecoder has been deprecated
-    [javac]     	String username = URLDecoder.decode( ParamUtils.getParameter(request, "username"));
-    [javac]     	                            ^
-    [javac] C:\Projects\websockets\src\com\ifsoft\websockets\servlet\XMPPServlet.java:82: warning: [deprecation] decode(java.lang.String) in java.net.URLDecoder has been deprecated
-    [javac] 		String password = URLDecoder.decode( ParamUtils.getParameter(request, "password"));
-    [javac] 		                            ^
-    [javac] C:\Projects\websockets\src\com\ifsoft\websockets\servlet\XMPPServlet.java:83: warning: [deprecation] decode(java.lang.String) in java.net.URLDecoder has been deprecated
-    [javac] 		String resource = URLDecoder.decode( ParamUtils.getParameter(request, "resource"));
-    [javac] 		                            ^
-    [javac] C:\Projects\websockets\src\com\ifsoft\websockets\servlet\XMPPServlet.java:111: warning: [deprecation] decode(java.lang.String) in java.net.URLDecoder has been deprecated
-    [javac] 		String username = URLDecoder.decode( ParamUtils.getParameter(request, "username"));
-    [javac] 		                            ^
-    [javac] C:\Projects\websockets\src\com\ifsoft\websockets\servlet\XMPPServlet.java:112: warning: [deprecation] decode(java.lang.String) in java.net.URLDecoder has been deprecated
-    [javac] 		String password = URLDecoder.decode( ParamUtils.getParameter(request, "password"));
-    [javac] 		                            ^
-    [javac] C:\Projects\websockets\src\com\ifsoft\websockets\servlet\XMPPServlet.java:113: warning: [deprecation] decode(java.lang.String) in java.net.URLDecoder has been deprecated
-    [javac] 		String resource = URLDecoder.decode( ParamUtils.getParameter(request, "resource"));
-    [javac] 		                            ^
-    [javac] C:\Projects\websockets\src\com\ifsoft\websockets\servlet\WebSocketsAdmin.java:70: warning: [deprecation] info(java.lang.String) in org.jivesoftware.util.Log has been deprecated
-    [javac] 					Log.info("WebSockets Properties updated");
-    [javac] 					   ^
-    [javac] C:\Projects\websockets\src\com\ifsoft\websockets\servlet\WebSocketsAdmin.java:73: warning: [deprecation] error(java.lang.String,java.lang.Throwable) in org.jivesoftware.util.Log has been deprecated
-    [javac] 					Log.error(e.getMessage(), e);
-    [javac] 					   ^
-    [javac] C:\Projects\websockets\src\com\ifsoft\websockets\servlet\WebSocketsAdmin.java:135: warning: [deprecation] error(java.lang.Throwable) in org.jivesoftware.util.Log has been deprecated
-    [javac]         	Log.error(e);
-    [javac]         	   ^
-    [javac] 9 warnings
 
 jar:
       [jar] Building jar: C:\Projects\websockets\plugin\lib\websockets.jar
       [jar] Building jar: C:\Projects\websockets\plugin\WEB-INF\lib\websockets.jar
 
 war:
-      [jar] Building jar: C:\Work\Projects\2010.04.21-iTrader\Workspace\openfire_3_8_1\target\openfire\plugins\websockets.war
+      [jar] Building jar: C:\Work\Projects\2010.04.21-iTrader\Workspace\openfire_3_10_0\target\openfire\plugins\websockets.war
 
 BUILD SUCCESSFUL
-Total time: 4 seconds
+Total time: 1 second

@@ -21,6 +21,7 @@ public class WSConnection extends VirtualConnection
     private String hostName;
     private LocalClientSession session;
     private XMPPServlet.XMPPWebSocket socket;
+    private boolean isSecure = false;
 
     public WSConnection( String remoteAddr, String hostName ) {
     	this.remoteAddr = remoteAddr;
@@ -29,6 +30,14 @@ public class WSConnection extends VirtualConnection
 
     public void setSocket( XMPPServlet.XMPPWebSocket socket ) {
     	this.socket = socket;
+    }
+
+	public boolean isSecure() {
+        return isSecure;
+    }
+
+	public void setSecure(boolean isSecure) {
+        this.isSecure = isSecure;
     }
 
 	public SessionPacketRouter getRouter()

@@ -13,11 +13,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.Log;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class WebSocketsAdmin extends HttpServlet
 {
+	private static Logger Log = LoggerFactory.getLogger("WebSocketsAdmin");
+
 	private String action                   = "edit";
 
 	private String webAppName	            = "ws";
@@ -132,7 +136,7 @@ public class WebSocketsAdmin extends HttpServlet
 			out.println("</html>");
         }
         catch (Exception e) {
-        	Log.error(e);
+        	Log.error("displayPage exception", e);
         }
 	}
 

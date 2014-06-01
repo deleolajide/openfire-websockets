@@ -25,7 +25,7 @@ import com.ifsoft.websockets.*;
 import com.ifsoft.websockets.servlet.XMPPServlet;
 
 
-public class WebSocketsPlugin implements Plugin {
+public class WebSocketsPlugin implements Plugin  {
 
 	private static Logger Log = LoggerFactory.getLogger("WebSocketsPlugin");
 	private static final String NAME 		= "ws";
@@ -35,6 +35,7 @@ public class WebSocketsPlugin implements Plugin {
     private File pluginDirectory;
 
     private ConcurrentHashMap<String, XMPPServlet.XMPPWebSocket> sockets = new ConcurrentHashMap<String, XMPPServlet.XMPPWebSocket>();
+
 
 //-------------------------------------------------------
 //
@@ -52,15 +53,12 @@ public class WebSocketsPlugin implements Plugin {
 			ContextHandlerCollection contexts = HttpBindManager.getInstance().getContexts();
 
 			try {
-
 				Log.info( "["+ NAME + "] initialize " + NAME + " initialize Websockets " + appName);
 				ServletContextHandler context = new ServletContextHandler(contexts, "/" + appName, ServletContextHandler.SESSIONS);
 				context.addServlet(new ServletHolder(new XMPPServlet()),"/server");
 
-
-				Log.info( "["+ NAME + "] initialize " + NAME + " initialize Web App " + appName);
-				WebAppContext context2 = new WebAppContext(contexts, pluginDirectory.getPath(), "/" + appName);
-				context2.setWelcomeFiles(new String[]{"index.html"});
+				WebAppContext context2 = new WebAppContext(contexts, pluginDirectory.getPath(), "/websockets");
+				context.setWelcomeFiles(new String[]{"index.html"});
 
 			}
 			catch(Exception e) {

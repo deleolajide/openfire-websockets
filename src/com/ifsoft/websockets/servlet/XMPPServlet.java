@@ -19,14 +19,20 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.WebSocket;
-import org.eclipse.jetty.websocket.WebSocketFactory;
-import org.eclipse.jetty.websocket.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.websocket.api.annotations.*;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 
 import org.jivesoftware.util.ParamUtils;
-import org.jivesoftware.openfire.Connection;
 import org.jivesoftware.openfire.SessionManager;
 import org.jivesoftware.openfire.StreamID;
+import org.jivesoftware.openfire.session.ClientSession;
 import org.jivesoftware.openfire.session.LocalClientSession;
 import org.jivesoftware.openfire.net.VirtualConnection;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
@@ -54,174 +60,255 @@ public final class XMPPServlet extends WebSocketServlet
 
     private ConcurrentHashMap<String, XMPPServlet.XMPPWebSocket> sockets;
     private String remoteAddr;
+    private WebSocketsPlugin plugin;
 
-    public XMPPServlet() {
-    	sockets = ( ( WebSocketsPlugin) XMPPServer.getInstance().getPluginManager().getPlugin( "websockets" ) ).getSockets();
-    }
-
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+    public XMPPServlet()
     {
-    	// get remote addr
-
-    	try {
-    		getServletContext().getNamedDispatcher( "default" ).forward( request, response );
-    	} catch ( Exception e ) {
-    		Log.error( "An error has occurred : ",  e );
-    		response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Websocket only.");
-    	}
+		plugin = (WebSocketsPlugin) XMPPServer.getInstance().getPluginManager().getPlugin("websockets");
+    	sockets = plugin.getSockets();
     }
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException
-    {
-    	doGet( request, response );
-    }
-
-    public boolean checkOrigin(HttpServletRequest request, String origin)
-    {
-    	String username = URLDecoder.decode( ParamUtils.getParameter(request, "username"));
-		String password = URLDecoder.decode( ParamUtils.getParameter(request, "password"));
-		String resource = URLDecoder.decode( ParamUtils.getParameter(request, "resource"));
-		String register = ParamUtils.getParameter(request, "register");
-
-		// escape node from username
-		username = JID.escapeNode( username );
-
-		// make sure to pass the resource as part of the digest
-		String digest = getMD5( username + password + resource );
-		Log.debug( "checkOrigin: Digest created for " + username + " : " + resource + " = " + digest );
-
-		if ( xmppConnect( username, password, resource, register, request ) == null ) {
-			return false;
-		} else {
-			return true;
-		}
-    }
-
-	@Override
-	public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol) {
-
-		/*
-		long stamp = System.currentTimeMillis();
-		for ( Enumeration p = request.getParameterNames() ; p.hasMoreElements() ; ) {
-			String element = (String) p.nextElement();
-			Log.info( stamp + " : Parameter found : " + element + " = " + request.getParameter( element ) );
-		}
-		*/
-
-		String username = URLDecoder.decode( ParamUtils.getParameter(request, "username"));
-		String password = URLDecoder.decode( ParamUtils.getParameter(request, "password"));
-		String resource = URLDecoder.decode( ParamUtils.getParameter(request, "resource"));
-		String register = ParamUtils.getParameter(request, "register");
-
-		// escape node from username
-		username = JID.escapeNode( username );
-
-		XMPPWebSocket socket = xmppConnect( username, password, resource, register, request );
-		Log.debug( socket.getDigest() + " : doWebSocketConnect : Digest created for " + username + " : " + resource );
-
-		try {
-			// return the socket that has been stored in cache
-			return socket;
-		} catch ( Exception e ) {
-			Log.error( "An error occurred while attempting to get a sesison from cache : ", e );
-			return null;
-		}
+	@Override public void configure(WebSocketServletFactory factory)
+	{
+		//factory.getPolicy().setIdleTimeout(10000);
+		factory.setCreator(new WSocketCreator());
 	}
 
-	 public static String getMD5(String input) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] messageDigest = md.digest(input.getBytes());
-            BigInteger number = new BigInteger(1, messageDigest);
-            String hashtext = number.toString(16);
-            // Now we need to zero pad it if you actually want the full 32 chars.
-            while (hashtext.length() < 32) {
-                hashtext = "0" + hashtext;
-            }
-            return hashtext;
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
+	public class WSocketCreator implements WebSocketCreator
+	{
+		@Override public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+		{
+			for (String subprotocol : req.getSubProtocols())
+			{
+				if ("xmpp".equals(subprotocol))
+				{
+					XMPPWebSocket socket =  new XMPPWebSocket();
 
-	public class XMPPWebSocket implements WebSocket.OnTextMessage {
+					if (doWebSocketConnect(req.getHttpServletRequest(), socket))
+					{
+						resp.setAcceptedSubProtocol(subprotocol);
+						return socket;
 
-		private Connection conn;
+					} else return null;
+				}
+			}
+			return null;
+		}
+
+		private boolean doWebSocketConnect(HttpServletRequest request, XMPPWebSocket socket)
+		{
+			try {
+				String username = URLDecoder.decode( ParamUtils.getParameter(request, "username"), "UTF-8");
+				String password = URLDecoder.decode( ParamUtils.getParameter(request, "password"), "UTF-8");
+				String resource = URLDecoder.decode( ParamUtils.getParameter(request, "resource"), "UTF-8");
+				String register = ParamUtils.getParameter(request, "register");
+
+				username = JID.escapeNode( username );
+
+				String user = username.equals("null") ? resource : username;
+				String digest = getMD5(user + password + resource );
+				JID userJid = XMPPServer.getInstance().createJID(user, resource);
+
+				Log.debug( digest + " : doWebSocketConnect : Digest created for " + userJid + " : " + register );
+
+				LocalClientSession session = (LocalClientSession) SessionManager.getInstance().getSession(userJid);
+
+				if (session != null)
+				{
+					int conflictLimit = SessionManager.getInstance().getConflictKickLimit();
+
+					if (conflictLimit == SessionManager.NEVER_KICK) {
+						return false;
+					}
+
+					int conflictCount = session.incrementConflictCount();
+
+					if (conflictCount > conflictLimit) {
+						session.close();
+						SessionManager.getInstance().removeSession(session);
+					}
+					else {
+						return false;
+					}
+				}
+
+				// get remote addr
+				String remoteAddr = request.getRemoteAddr();
+
+				if ( JiveGlobals.getProperty("websockets.header.remoteaddr") != null && request.getHeader( JiveGlobals.getProperty("websockets.header.remoteaddr") ) != null) {
+					remoteAddr = request.getHeader( JiveGlobals.getProperty("websockets.header.remoteaddr") );
+				}
+
+				try {
+					WSConnection wsConnection = new WSConnection( remoteAddr, request.getRemoteHost() );
+					socket.setWSConnection(digest, wsConnection);
+					AuthToken authToken;
+
+					try {
+						session = SessionManager.getInstance().createClientSession( wsConnection, new BasicStreamID("url" + System.currentTimeMillis()));
+						wsConnection.setRouter( new SessionPacketRouter( session ) );
+
+						if (username.equals("null") && password.equals("null"))	// anonymous user
+						{
+							authToken = new AuthToken(resource, true);
+
+						} else {
+
+							try {
+								String userName = JID.unescapeNode(username);
+
+								if (register != null && register.equals("true") && XMPPServer.getInstance().getIQRegisterHandler().isInbandRegEnabled())	// if register, create new user
+								{
+									UserManager userManager = XMPPServer.getInstance().getUserManager();
+
+									try {
+										userManager.getUser(userName);
+									}
+									catch (UserNotFoundException e) {
+										userManager.createUser(userName, password, null, null);
+									}
+								}
+
+								authToken = AuthFactory.authenticate( userName, password );
+							} catch ( UnauthorizedException e ) {
+								Log.error( "An error occurred while attempting to create a web socket (USERNAME: " + username + " RESOURCE: " + resource + " ) : ", e );
+								return false;
+							} catch ( Exception e ) {
+								Log.error( "An error occurred while attempting to create a web socket : ", e );
+								return false;
+							}
+						}
+
+						session.setAuthToken(authToken, resource);
+						socket.setSession( session );
+					}
+					catch (Exception e1) {
+						Log.error( "An error occurred while attempting to create a new socket " + e1);
+						return false;
+					}
+
+					Log.debug( "Created new socket for digest " + digest );
+					Log.debug( "Total websockets created : " + sockets.size() );
+
+				} catch ( Exception e ) {
+					Log.error( "An error occurred while attempting to create a new socket " + e);
+					return false;
+				}
+
+
+			} catch ( Exception e ) {
+				if (socket.getSession() != null) SessionManager.getInstance().removeSession(socket.getSession());
+				return false;
+			}
+
+			return true;
+		}
+
+		private String getMD5(String input)
+		{
+			try {
+				MessageDigest md = MessageDigest.getInstance("MD5");
+				byte[] messageDigest = md.digest(input.getBytes());
+				BigInteger number = new BigInteger(1, messageDigest);
+				String hashtext = number.toString(16);
+				// Now we need to zero pad it if you actually want the full 32 chars.
+				while (hashtext.length() < 32) {
+					hashtext = "0" + hashtext;
+				}
+				return hashtext;
+			}
+			catch (NoSuchAlgorithmException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+	}
+
+	@WebSocket public class XMPPWebSocket {
+
+		private Session wsSession;
 		private WSConnection wsConnection;
 		private String digest;
-		private LocalClientSession session;
+		private LocalClientSession xmppSession;
 
-		public XMPPWebSocket( String digest, WSConnection wsConnection ) {
+		public void setWSConnection(String digest, WSConnection wsConnection) {
 			this.digest = digest;
 			this.wsConnection = wsConnection;
+
+			wsConnection.setSocket(this);
+			sockets.put(digest, this);
+
+			Log.debug(digest + " : setWSConnection");
 		}
 
 		public String getDigest() {
 			return digest;
 		}
 
-		public void setSession( LocalClientSession session ) {
-			this.session = session;
+		public void setSession( LocalClientSession xmppSession ) {
+			this.xmppSession = xmppSession;
 		}
 
 		public LocalClientSession getSession() {
-			return session;
+			return xmppSession;
 		}
 
 		public boolean isOpen() {
-			return conn.isOpen();
+			return wsSession.isOpen();
 		}
 
-		@Override
-		public void onOpen(Connection connection) {
-
-			wsConnection.setSocket( this );
-			conn = connection;
-			Log.debug( digest + " : onOpen : Socket opened" );
-			sockets.put( digest, this );
-			// send back a message stating that a websocket connection has been made
-			/*
-			try {
-				conn.sendMessage( "XMPP Server recieved Web Socket upgrade and added to Receiver List." );
-			} catch ( IOException e ) {
-				Log.error( "An error occurred : ", e );
-			}
-			*/
+		@OnWebSocketConnect public void onConnect(Session wsSession)
+		{
+			this.wsSession = wsSession;
+			wsConnection.setSecure(wsSession.isSecure());
+			Log.debug(digest + " : onConnect");
 		}
 
-		@Override
-		public void onClose( int closeCode, String message ) {
+		@OnWebSocketClose public void onClose(int statusCode, String reason)
+		{
 			try {
-				sockets.remove( digest );
-				session.close();
-				session = null;
+				sockets.remove(digest);
+				if (xmppSession != null) xmppSession.close();
+				xmppSession = null;
+
 			} catch ( Exception e ) {
-				Log.error( "An error occurred while attempting to remove the socket and session", e );
+				Log.error( "An error occurred while attempting to remove the socket and xmppSession", e );
 			}
-			Log.debug( digest + " : onClose : WebSocket closed" );
-			Log.debug( digest + " : onClose : has socket in cache = " + sockets.containsKey( digest ) );
+
+			Log.debug( digest + " : onClose : " + statusCode + " " + reason);
 		}
 
-		@Override
-		public void onMessage(String data) {
-			if ( !"".equals( data.trim() ) ) {
+		@OnWebSocketError public void onError(Throwable error)
+		{
+			Log.error("XMPPWebSocket onError", error);
+		}
+
+		@OnWebSocketMessage public void onTextMethod(String data)
+		{
+			if ( !"".equals( data.trim()))
+			{
 				try {
 					Log.debug( digest + " : onMessage : Received : " + data );
-					wsConnection.getRouter().route( DocumentHelper.parseText( data ).getRootElement() );
+					wsConnection.getRouter().route(DocumentHelper.parseText(data).getRootElement());
+
 				} catch ( Exception e ) {
 					Log.error( "An error occurred while attempting to route the packet : ", e );
 				}
 			}
 		}
 
+		@OnWebSocketMessage public void onBinaryMethod(byte data[], int offset, int length)
+		{
+		 // simple BINARY message received
+		}
+
 		public void deliver(String packet)
         {
-            if (conn.isOpen() && !"".equals( packet.trim() ) )
+            if (wsSession != null && wsSession.isOpen() && !"".equals( packet.trim() ) )
             {
                 try {
                 	Log.debug( digest + " : Delivered : " + packet );
-                	conn.sendMessage(packet);
+                	wsSession.getRemote().sendString(packet);
                 } catch (Exception e) {
                     Log.error("XMPPWebSocket deliver " + e);
                 }
@@ -233,143 +320,25 @@ public final class XMPPServlet extends WebSocketServlet
             Log.debug( digest + " : disconnect : XMPPWebSocket disconnect");
             Log.debug( "Total websockets created : " + sockets.size() );
             try {
-            	if (conn != null && conn.isOpen())
+            	if (wsSession != null && wsSession.isOpen())
 	            {
-	                conn.disconnect();
+	                wsSession.close();
 	            }
             } catch ( Exception e ) {
-            	Log.error( "An error has occurred", e );
+
+            	try {
+            		wsSession.disconnect();
+            	} catch ( Exception e1 ) {
+
+				}
             }
             try {
             	sockets.remove( digest );
-            	SessionManager.getInstance().removeSession( session );
+            	SessionManager.getInstance().removeSession( xmppSession );
             } catch ( Exception e ) {
             	Log.error( "An error has occurred", e );
             }
-            session = null;
+            xmppSession = null;
         }
 	}
-
-	// ------------------------------------------------------------------------
-    //
-    // XMPPConnect
-    //
-    // ------------------------------------------------------------------------
-	private XMPPWebSocket xmppConnect(String username, String password, String resource, String register, HttpServletRequest request)
-    {
-
-    	// make sure to pass the resource as part of the digest
- 		String digest = getMD5( username + password + resource );
- 		Log.debug( digest + " : doWebSocketConnect : Digest created for " + username + " : " + resource + " : " + register );
-
- 		XMPPWebSocket socket;
-
- 		// if the socket has been chaced then use it
- 		if ( sockets.containsKey( digest ) ) {
- 			Log.debug( "Socket found in cache for digest " + digest );
- 			try {
- 				// WSConnection connection = (WSConnection) session.getConnection();
- 				socket = ( XMPPWebSocket ) sockets.get( digest );
- 				try {
- 					WSConnection connection = (WSConnection) socket.getSession().getConnection();
- 					return socket;
- 				} catch ( Exception e ) {
- 					// remote sesison is connection state fails
- 					SessionManager.getInstance().removeSession( socket.getSession() );
- 					return null;
- 				}
- 			} catch ( Exception e ) {
- 				// attempt to remove session
- 				Log.error( "An error occurred while attempting to get the socket from cache", e );
- 				return null;
- 			}
- 		}
-
- 		// get remote addr
- 		String remoteAddr = request.getRemoteAddr();
- 		if ( JiveGlobals.getProperty("websockets.header.remoteaddr") != null && request.getHeader( JiveGlobals.getProperty("websockets.header.remoteaddr") ) != null) {
- 			remoteAddr = request.getHeader( JiveGlobals.getProperty("websockets.header.remoteaddr") );
- 		}
-
- 		try {
- 			// THE FOLLOWING 2 CLASSES CAN REFERENCE EACHOTHER
- 			// create the connection that hooks into XMPP
- 			WSConnection wsConnection = new WSConnection( remoteAddr, request.getRemoteHost() );
- 			// create websocket
- 			socket = new XMPPWebSocket( digest, wsConnection );
- 			// assign the websocket to the connection
- 			wsConnection.setSocket( socket );
-
-			// test for existing session and re-use authentication otherwise create new session and authenicate
-
-			LocalClientSession session;
-			AuthToken authToken;
-
-			try {
-				session = (LocalClientSession) SessionManager.getInstance().getSession(new JID(JID.escapeNode(username) + "@" + JiveGlobals.getProperty("xmpp.domain") + "/" + resource));
-
-				if (session != null)
-				{
-					session.close();
-					session = SessionManager.getInstance().createClientSession( wsConnection, new BasicStreamID("url" + System.currentTimeMillis() ) );
-					wsConnection.setRouter( new SessionPacketRouter( session ) );
-					authToken = new AuthToken(username);
-
-				} else {
-
-					session = SessionManager.getInstance().createClientSession( wsConnection, new BasicStreamID("url" + System.currentTimeMillis() ) );
-					wsConnection.setRouter( new SessionPacketRouter( session ) );
-
-					if (username.equals("null") && password.equals("null"))	// anonymous user
-					{
-						authToken = new AuthToken(resource, true);
-
-					} else {
-
-						try {
-							String userName = JID.unescapeNode(username);
-
-							if (register != null && register.equals("true"))	// if register, create new user
-							{
-								UserManager userManager = XMPPServer.getInstance().getUserManager();
-
-								try {
-									userManager.getUser(userName);
-								}
-								catch (UserNotFoundException e) {
-									userManager.createUser(userName, password, null, null);
-								}
-							}
-
-							authToken = AuthFactory.authenticate( userName, password );
-						} catch ( UnauthorizedException e ) {
-							Log.error( "An error occurred while attempting to create a web socket (USERNAME: " + username + " RESOURCE: " + resource + " ) : ", e );
-							return null;
-						} catch ( Exception e ) {
-							Log.error( "An error occurred while attempting to create a web socket : ", e );
-							return null;
-						}
-					}
-				}
-
-				session.setAuthToken(authToken, resource);
-				socket.setSession( session );
-			}
-			catch (Exception e1) {
-				Log.error( "An error occurred while attempting to create a new socket " + e1);
-				return null;
-			}
-
-			Log.debug( "Created new socket for digest " + digest );
-			Log.debug( "Total websockets created : " + sockets.size() );
-
- 		} catch ( Exception e ) {
- 			Log.error( "An error occurred while attempting to create a new socket " + e);
- 			return null;
- 		}
-
- 		// return a websocket
- 		return socket;
-    }
-
 }
